@@ -1048,13 +1048,15 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // Check hash on load
-    window.addEventListener('DOMContentLoaded', () => {
+    // Check hash on load & hashchange
+    function syncHashTab() {
       const hash = window.location.hash.replace('#', '') || 'overview';
       if (TAB_HEADINGS[hash]) {
         switchTab(hash);
       }
-    });
+    }
+    window.addEventListener('DOMContentLoaded', syncHashTab);
+    window.addEventListener('hashchange', syncHashTab);
 
     // Toast helper
     function showToast(message, isError = false) {
