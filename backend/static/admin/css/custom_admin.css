@@ -1,0 +1,267 @@
+/* ==========================================================================
+   LUMA THREADS - LUXURY DJANGO ADMIN THEME
+   Modern, elegant, high-contrast dashboard styling
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  --primary: #121214;
+  --primary-hover: #27272a;
+  --accent: #2563eb;
+  --bg-main: #f8fafc;
+  --bg-card: #ffffff;
+  --border-color: #e2e8f0;
+  --text-dark: #0f172a;
+  --text-muted: #64748b;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --header-bg: #111827;
+  --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+  font-family: var(--font-family) !important;
+  background-color: var(--bg-main) !important;
+  color: var(--text-dark) !important;
+  font-size: 14px;
+}
+
+/* Header & Branding */
+#header {
+  background: var(--header-bg) !important;
+  color: #ffffff !important;
+  padding: 14px 28px !important;
+  border-bottom: 1px solid #1f2937 !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+#branding h1 {
+  font-family: var(--font-family) !important;
+  font-size: 1.15rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  margin: 0 !important;
+}
+
+#branding h1 a:link, #branding h1 a:visited {
+  color: #ffffff !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#user-tools {
+  font-size: 13px !important;
+  color: #9ca3af !important;
+}
+
+#user-tools a {
+  color: #e5e7eb !important;
+  border-bottom: none !important;
+  font-weight: 500 !important;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+#user-tools a:hover {
+  background: #1f2937;
+  color: #ffffff !important;
+}
+
+/* Breadcrumbs */
+div.breadcrumbs {
+  background: #ffffff !important;
+  color: var(--text-muted) !important;
+  padding: 12px 28px !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  font-size: 13px !important;
+}
+
+div.breadcrumbs a {
+  color: var(--accent) !important;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+/* Main Content Container */
+#content {
+  padding: 24px 28px !important;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+/* Module Cards */
+.module {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+  margin-bottom: 24px !important;
+  overflow: hidden;
+}
+
+.module h2, .module caption {
+  background: #f8fafc !important;
+  color: var(--text-dark) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.75px !important;
+  padding: 12px 18px !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+/* Tables */
+#changelist table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: 100% !important;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background: #ffffff;
+}
+
+#changelist table thead th {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+#changelist table tbody td, #changelist table tbody th {
+  padding: 12px 16px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  vertical-align: middle !important;
+  font-size: 13.5px !important;
+}
+
+#changelist table tbody tr:hover {
+  background-color: #f8fafc !important;
+}
+
+/* Action Buttons & Links */
+.button, input[type=submit], input[type=button], .submit-row input, a.button {
+  background: var(--primary) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+  border: none !important;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.button:hover, input[type=submit]:hover, input[type=button]:hover, .submit-row input:hover {
+  background: var(--primary-hover) !important;
+  transform: translateY(-1px);
+}
+
+.button.default, input[type=submit].default {
+  background: var(--accent) !important;
+}
+
+.button.default:hover, input[type=submit].default:hover {
+  background: #1d4ed8 !important;
+}
+
+.deletelink {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+  border-radius: 6px !important;
+  padding: 6px 12px !important;
+  font-weight: 600 !important;
+}
+
+.deletelink:hover {
+  background: #fca5a5 !important;
+}
+
+/* Forms & Inputs */
+input[type=text], input[type=password], input[type=email], input[type=url],
+input[type=number], input[type=tel], textarea, select {
+  border: 1px solid var(--border-color) !important;
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  font-family: var(--font-family) !important;
+  background-color: #ffffff !important;
+  color: var(--text-dark) !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+input[type=text]:focus, select:focus, textarea:focus {
+  border-color: var(--accent) !important;
+  outline: 2px solid rgba(37, 99, 235, 0.2) !important;
+}
+
+/* Filter Sidebar */
+#changelist-filter {
+  background: #ffffff !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 8px !important;
+  margin-left: 20px !important;
+}
+
+#changelist-filter h2 {
+  background: #f8fafc !important;
+  color: var(--text-dark) !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  padding: 10px 14px !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+#changelist-filter h3 {
+  color: #64748b !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  margin: 14px 14px 6px !important;
+}
+
+#changelist-filter ul {
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+}
+
+#changelist-filter a {
+  color: #334155 !important;
+  font-size: 13px !important;
+}
+
+#changelist-filter li.selected a {
+  color: var(--accent) !important;
+  font-weight: 700 !important;
+}
+
+/* Badges for Product Variants / Inlines */
+.inline-group {
+  border: 1px solid var(--border-color) !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  overflow: hidden;
+  margin-top: 24px;
+}
+
+.inline-group h2 {
+  background: #f1f5f9 !important;
+  color: #1e293b !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  padding: 10px 16px !important;
+}
+

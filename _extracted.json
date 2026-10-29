@@ -1,0 +1,1091 @@
+{
+  "hero": {
+    "desktop": "https://www.pistoladenim.com/cdn/shop/files/1_d_af80c9be-512a-4c48-a5bd-c442be678d48.jpg",
+    "mobile": "https://www.pistoladenim.com/cdn/shop/files/1_m_72567d4d-2e91-4249-94ac-97e4b1b2c92f.png",
+    "cta": "Shop New Arrivals",
+    "ctaHref": "/collections/all-new"
+  },
+  "categories": [
+    {
+      "title": "ICONS",
+      "image": "https://www.pistoladenim.com/cdn/shop/files/1_m_8.png",
+      "href": "/collections/best-sellers"
+    },
+    {
+      "title": "THE LEXI",
+      "image": "https://www.pistoladenim.com/cdn/shop/files/1_m_6.png",
+      "href": "/collections/all-denim"
+    },
+    {
+      "title": "DARK WASH",
+      "image": "https://www.pistoladenim.com/cdn/shop/files/pdp_6.png",
+      "href": "/collections/all-denim"
+    },
+    {
+      "title": "HOLIDAY 2026",
+      "image": "https://www.pistoladenim.com/cdn/shop/files/1_m_3.png",
+      "href": "/collections/all-new"
+    },
+    {
+      "title": "PANTS",
+      "image": "https://www.pistoladenim.com/cdn/shop/files/2_m_1.png",
+      "href": "/collections/all-denim"
+    },
+    {
+      "title": "KNITS",
+      "image": "https://www.pistoladenim.com/cdn/shop/files/3_m_ea8a31b0-e07f-4439-bab4-9f045a27e2f8.png",
+      "href": "/collections/all-new"
+    }
+  ],
+  "homeProducts": [
+    "wes-high-rise-barrel-moonbeam",
+    "petite-wes-high-rise-barrel-moonbeam",
+    "luna-embellished-crew-neck-sweater-winter-white",
+    "harlowe-relaxed-baggy-orion",
+    "ramsey-tie-sleeve-crew-neck-sweater-savvy-red",
+    "lexi-mid-rise-bowed-straight-19",
+    "elise-featherweight-polo-henley-savvy-red",
+    "jett-alt-leather-high-rise-bowed-straight-savvy-red",
+    "dara-funnel-neck-top-noir",
+    "beau-sateen-seamed-crescent-leg-black-satin",
+    "chiara-lace-sweater-black",
+    "saige-high-rise-a-line-short-black-sateen"
+  ],
+  "collections": {
+    "all-new": {
+      "handle": "all-new",
+      "title": "All New",
+      "products": [
+        "wes-high-rise-barrel-moonbeam",
+        "petite-wes-high-rise-barrel-moonbeam",
+        "luna-embellished-crew-neck-sweater-winter-white",
+        "harlowe-relaxed-baggy-orion",
+        "ramsey-tie-sleeve-crew-neck-sweater-savvy-red",
+        "lexi-mid-rise-bowed-straight-19",
+        "elise-featherweight-polo-henley-savvy-red",
+        "jett-alt-leather-high-rise-bowed-straight-savvy-red",
+        "dara-funnel-neck-top-noir",
+        "beau-sateen-seamed-crescent-leg-black-satin",
+        "chiara-lace-sweater-black",
+        "saige-high-rise-a-line-short-black-sateen",
+        "madison-long-sleeve-crew-neck-sweater-tee-multi-stripe",
+        "kyra-high-rise-bowed-wide-leg-eureka",
+        "carina-high-rise-super-wide-flare-nightfall",
+        "leonie-cropped-denim-jacket-nightfall",
+        "kit-v-neck-pullover-sweater-sapphire",
+        "elise-featherweight-polo-henley-sapphire",
+        "juno-featherweight-sweater-black",
+        "willow-mid-rise-pleated-barrel-vega"
+      ]
+    },
+    "best-sellers": {
+      "handle": "best-sellers",
+      "title": "Best Sellers",
+      "products": [
+        "madison-long-sleeve-crew-neck-sweater-tee-multi-stripe",
+        "wes-high-rise-barrel-moonbeam",
+        "lexi-mid-rise-bowed-straight",
+        "lexi-mid-rise-bowed-straight-petite-1",
+        "sabrina-curved-utility-pants",
+        "sabrina-petite-curved-utility-pants",
+        "lexi-mid-rise-bowed-straight-distance",
+        "lexi-mid-rise-bowed-straight-18",
+        "lyvia-merino-polo-cardigan-tealwood-stripe",
+        "sabrina-curved-utility-pants-lindt",
+        "petite-sabrina-curved-utility-pants-lindt",
+        "jett-alt-leather-high-rise-bowed-straight-savvy-red",
+        "sabrina-curved-utility-pant-nautical",
+        "beau-sateen-seamed-crescent-leg-black-satin",
+        "lexi-mid-rise-bowed-straight-19",
+        "lexi-mid-rise-bowed-straight-moonwave",
+        "lexi-mid-rise-bowed-straight-black-night",
+        "wes-high-rise-barrel-1",
+        "wes-high-rise-barrel-petite",
+        "evie-high-rise-slim-boot"
+      ]
+    },
+    "all-denim": {
+      "handle": "all-denim",
+      "title": "All Denim",
+      "products": [
+        "wes-high-rise-barrel-moonbeam",
+        "petite-wes-high-rise-barrel-moonbeam",
+        "lexi-mid-rise-bowed-straight-black-night",
+        "petite-lexi-mid-rise-bowed-straight-black-night",
+        "carina-high-rise-super-wide-flare-nightfall",
+        "leonie-cropped-denim-jacket-nightfall",
+        "lexi-mid-rise-bowed-straight-19",
+        "harlowe-relaxed-baggy-orion",
+        "kyra-high-rise-bowed-wide-leg-eureka",
+        "petite-kyra-high-rise-bowed-wide-leg-eureka",
+        "lexi-mid-rise-bowed-straight-distance",
+        "lexi-mid-rise-bowed-straight-18",
+        "willow-mid-rise-pleated-barrel-vega",
+        "larsen-ankle-relaxed-flare-polaris",
+        "cassie-super-high-rise-straight-polaris",
+        "larsen-relaxed-flare-daring",
+        "lexi-mid-rise-bowed-straight-moonwave",
+        "cassie-super-high-rise-straight-legend",
+        "lana-dbl-button-high-rise-ultra-wide-leg-1",
+        "lexi-mid-rise-bowed-straight"
+      ]
+    }
+  },
+  "products": {
+    "wes-high-rise-barrel-moonbeam": {
+      "handle": "wes-high-rise-barrel-moonbeam",
+      "title": "Wes High Rise Barrel - Moonbeam",
+      "color": "Moonbeam",
+      "price": "$248.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/WES-M-1.png",
+        "https://www.pistoladenim.com/cdn/shop/files/WES-M-2detail.png",
+        "https://www.pistoladenim.com/cdn/shop/files/Wes-Moonbeam_9c08f6e7-b38e-45ad-a094-7df97ee391fc.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016820RL_MONBM_WES_044_376d22f6-e710-4f16-8643-6de21223be25.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016820RL_MONBM_WES_099_8fcc4e2a-f4c6-4aa7-beaa-200d74577169.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016820RL_MONBM_WES_105_aaa0a822-7579-4195-a392-f408ed0f7f75.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016820RL_MONBM_WES_122_6480be72-a974-4703-8f95-67b7eacb42b6.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016820RL_MONBM_WES_138_caccbc06-b09c-48ec-a450-6910d3e9ad5e.jpg"
+      ],
+      "badge": "New Arrival",
+      "description": "The Wes High Rise Barrel in Moonbeam is a sculpted barrel-leg jean with a high rise and a softly faded wash. Designed for everyday wear with a clean, modern silhouette.",
+      "details": [
+        "High rise barrel leg",
+        "Moonbeam wash",
+        "Premium denim construction",
+        "Made for everyday wear"
+      ],
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30",
+        "31",
+        "32"
+      ]
+    },
+    "petite-wes-high-rise-barrel-moonbeam": {
+      "handle": "petite-wes-high-rise-barrel-moonbeam",
+      "title": "PETITE Wes High Rise Barrel - Moonbeam",
+      "color": "Moonbeam",
+      "price": "$248.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/Wes-Moonbeam_9c08f6e7-b38e-45ad-a094-7df97ee391fc.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/WES-M-1.png"
+      ],
+      "badge": "",
+      "description": "PETITE Wes High Rise Barrel - Moonbeam from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "luna-embellished-crew-neck-sweater-winter-white": {
+      "handle": "luna-embellished-crew-neck-sweater-winter-white",
+      "title": "Luna Embellished Sweater - Winter White",
+      "color": "Winter White",
+      "price": "$218.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00065010NB_WWSTN_LUNA_011.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00065010NB_WWSTN_LUNA_074.jpg"
+      ],
+      "badge": "New Arrival",
+      "description": "Luna Embellished Sweater - Winter White from Pistola Denim.",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "details": []
+    },
+    "harlowe-relaxed-baggy-orion": {
+      "handle": "harlowe-relaxed-baggy-orion",
+      "title": "Harlowe Relaxed Baggy - Orion",
+      "color": "Orion",
+      "price": "$238.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00017010FZ_ORION_HARLOWE_170.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00017010FZ_ORION_HARLOWE_189.jpg"
+      ],
+      "badge": "New Arrival",
+      "description": "Harlowe Relaxed Baggy - Orion from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "ramsey-tie-sleeve-crew-neck-sweater-savvy-red": {
+      "handle": "ramsey-tie-sleeve-crew-neck-sweater-savvy-red",
+      "title": "Ramsey Tie Sleeve Crew Neck Sweater - Savvy Red",
+      "color": "Savvy Red",
+      "price": "$198.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00064010LQ_SAVYR_RAMSEY_039.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00064010LQ_SAVYR_RAMSEY_248.jpg"
+      ],
+      "badge": "New Arrival",
+      "description": "Ramsey Tie Sleeve Crew Neck Sweater - Savvy Red from Pistola Denim.",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "details": []
+    },
+    "lexi-mid-rise-bowed-straight-19": {
+      "handle": "lexi-mid-rise-bowed-straight-19",
+      "title": "Lexi Mid Rise Bowed Straight - Savvy Red",
+      "color": "Savvy Red",
+      "price": "$188.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00016200-DR_SAVVYRED_LEXI_129.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016200-DR_SAVVYRED_LEXI_148.jpg"
+      ],
+      "badge": "New Arrival",
+      "description": "Lexi Mid Rise Bowed Straight - Savvy Red from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "elise-featherweight-polo-henley-savvy-red": {
+      "handle": "elise-featherweight-polo-henley-savvy-red",
+      "title": "Elise Featherweight Polo Henley - Savvy Red",
+      "color": "Savvy Red",
+      "price": "$168.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00063060-YF_SAVVYRED_ELISE_001.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00063060-YF_SAVVYRED_ELISE_044.jpg"
+      ],
+      "badge": "New Arrival",
+      "description": "Elise Featherweight Polo Henley - Savvy Red from Pistola Denim.",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "details": []
+    },
+    "jett-alt-leather-high-rise-bowed-straight-savvy-red": {
+      "handle": "jett-alt-leather-high-rise-bowed-straight-savvy-red",
+      "title": "Jett High Rise Bowed Straight - Savvy Red",
+      "color": "Savvy Red",
+      "price": "$218.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00016370P4_SAVYR_JETT_277.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016370P4_SAVYR_JETT_046.jpg"
+      ],
+      "badge": "New Arrival",
+      "description": "Jett High Rise Bowed Straight - Savvy Red from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "dara-funnel-neck-top-noir": {
+      "handle": "dara-funnel-neck-top-noir",
+      "title": "Dara Long Sleeve Funnel Neck Top - Noir",
+      "color": "Noir",
+      "price": "$98.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00052010MR_BLACK_DARA_028.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00052010MR_BLACK_DARA_036.jpg"
+      ],
+      "badge": "",
+      "description": "Dara Long Sleeve Funnel Neck Top - Noir from Pistola Denim.",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "details": []
+    },
+    "beau-sateen-seamed-crescent-leg-black-satin": {
+      "handle": "beau-sateen-seamed-crescent-leg-black-satin",
+      "title": "Beau Seamed Crescent Leg - Black Satin",
+      "color": "Black Satin",
+      "price": "$218.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00017000IE_BLKSN_BEAU_011.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00017000IE_BLKSN_BEAU_067.jpg"
+      ],
+      "badge": "New Arrival",
+      "description": "Beau Seamed Crescent Leg - Black Satin from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "chiara-lace-sweater-black": {
+      "handle": "chiara-lace-sweater-black",
+      "title": "Chiara Lace Sweater - Black",
+      "color": "Black",
+      "price": "$218.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/chiara-1.png",
+        "https://www.pistoladenim.com/cdn/shop/files/P00064020LS_BLACK_CHIARA_079.jpg"
+      ],
+      "badge": "New Arrival",
+      "description": "Chiara Lace Sweater - Black from Pistola Denim.",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "details": []
+    },
+    "saige-high-rise-a-line-short-black-sateen": {
+      "handle": "saige-high-rise-a-line-short-black-sateen",
+      "title": "Saige High Rise A-Line Short - Black Sateen",
+      "color": "Black Sateen",
+      "price": "$158.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/Saige-1.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00024063IE_BLKSN_SAIGE_026.jpg"
+      ],
+      "badge": "New Arrival",
+      "description": "Saige High Rise A-Line Short - Black Sateen from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "madison-long-sleeve-crew-neck-sweater-tee-multi-stripe": {
+      "handle": "madison-long-sleeve-crew-neck-sweater-tee-multi-stripe",
+      "title": "Madison Knit Long Sleeve - Multi Stripe",
+      "color": "Multi Stripe",
+      "price": "$138.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00061094HC_MLTST_MADISON_015.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00061094HC_MLTST_MADISON_033.jpg"
+      ],
+      "badge": "New Arrival",
+      "description": "Madison Knit Long Sleeve - Multi Stripe from Pistola Denim.",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "details": []
+    },
+    "kyra-high-rise-bowed-wide-leg-eureka": {
+      "handle": "kyra-high-rise-bowed-wide-leg-eureka",
+      "title": "Kyra High Rise Bowed Wide Leg - Eureka",
+      "color": "Eureka",
+      "price": "$208.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00016218-QL_EUREKA_KYRA_006.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016218-QL_EUREKA_KYRA_039.jpg"
+      ],
+      "badge": "New Arrival",
+      "description": "Kyra High Rise Bowed Wide Leg - Eureka from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "carina-high-rise-super-wide-flare-nightfall": {
+      "handle": "carina-high-rise-super-wide-flare-nightfall",
+      "title": "Carina High Rise Super Wide Flare - Nightfall",
+      "color": "Nightfall",
+      "price": "$208.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00016600EZ_NGTFL_CARINA_019.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016600EZ_NGTFL_CARINA_111.jpg"
+      ],
+      "badge": "New Arrival",
+      "description": "Carina High Rise Super Wide Flare - Nightfall from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "leonie-cropped-denim-jacket-nightfall": {
+      "handle": "leonie-cropped-denim-jacket-nightfall",
+      "title": "Leonie Cropped Denim Jacket - Nightfall",
+      "color": "Nightfall",
+      "price": "$238.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00081000EZ_NGTFL_LEONIE_028.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00081000EZ_NGTFL_LEONIE_103.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/preview_images/e0cb31c8f4884e3e857458efaf08a693.thumbnail.0000000000_small.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/preview_images/6d8a4f3b698148309d0e70c47898397b.thumbnail.0000000000_small.jpg"
+      ],
+      "badge": "New Arrival",
+      "description": "Leonie Cropped Denim Jacket - Nightfall from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "kit-v-neck-pullover-sweater-sapphire": {
+      "handle": "kit-v-neck-pullover-sweater-sapphire",
+      "title": "Kit V-Neck Pullover Sweater - Sapphire",
+      "color": "Sapphire",
+      "price": "$188.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00063120-NB_SAPPHIRE_019.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00063120-NB_SAPPHIRE_034.png"
+      ],
+      "badge": "New",
+      "description": "Kit V-Neck Pullover Sweater - Sapphire from Pistola Denim.",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "details": []
+    },
+    "elise-featherweight-polo-henley-sapphire": {
+      "handle": "elise-featherweight-polo-henley-sapphire",
+      "title": "Elise Featherweight Polo Henley - Sapphire",
+      "color": "Sapphire",
+      "price": "$168.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00063060-YF_SAPPHIRE_ELISE_019.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00063060-YF_SAPPHIRE_ELISE_030.jpg"
+      ],
+      "badge": "New",
+      "description": "Elise Featherweight Polo Henley - Sapphire from Pistola Denim.",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "details": []
+    },
+    "juno-featherweight-sweater-black": {
+      "handle": "juno-featherweight-sweater-black",
+      "title": "Juno Featherweight Sweater - Black",
+      "color": "Black",
+      "price": "$158.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00063050-YF_BLACK_JUNO_086.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00063050-YF_BLACK_JUNO_075.jpg"
+      ],
+      "badge": "New",
+      "description": "Juno Featherweight Sweater - Black from Pistola Denim.",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "details": []
+    },
+    "willow-mid-rise-pleated-barrel-vega": {
+      "handle": "willow-mid-rise-pleated-barrel-vega",
+      "title": "Willow Mid Rise Pleated Barrel - Vega",
+      "color": "Vega",
+      "price": "$198.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00017020GV_VEGA2_WILLOW_050.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00017020GV_VEGA2_WILLOW_064.jpg"
+      ],
+      "badge": "New",
+      "description": "Willow Mid Rise Pleated Barrel - Vega from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "lexi-mid-rise-bowed-straight": {
+      "handle": "lexi-mid-rise-bowed-straight",
+      "title": "Lexi Mid Rise Bowed Straight Jean - Artisan",
+      "color": "Artisan",
+      "price": "$188.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00016200RLARTSN_017_dd6f5ab0-7416-488c-b9ad-351b3b519c85.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016200RLARTSN_042.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/LEXI_PUSH.png"
+      ],
+      "badge": "Best seller",
+      "description": "Lexi Mid Rise Bowed Straight Jean - Artisan from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "lexi-mid-rise-bowed-straight-petite-1": {
+      "handle": "lexi-mid-rise-bowed-straight-petite-1",
+      "title": "PETITE Lexi Mid Rise Bowed Straight Jean - Artisan",
+      "color": "Artisan",
+      "price": "$188.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00016200PRLARTSN_LEXI_033_leadwiththis.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016200PRLARTSN_LEXI_129.jpg"
+      ],
+      "badge": "Best seller",
+      "description": "PETITE Lexi Mid Rise Bowed Straight Jean - Artisan from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "sabrina-curved-utility-pants": {
+      "handle": "sabrina-curved-utility-pants",
+      "title": "Sabrina Curved Utility Pants - Meadow",
+      "color": "Meadow",
+      "price": "$178.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00116105-SL_MEADOW_000.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00116105-SL_MEADOW_088.jpg"
+      ],
+      "badge": "Best seller",
+      "description": "Sabrina Curved Utility Pants - Meadow from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "sabrina-petite-curved-utility-pants": {
+      "handle": "sabrina-petite-curved-utility-pants",
+      "title": "PETITE Sabrina Curved Utility Pants - Meadow",
+      "color": "Meadow",
+      "price": "$178.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00116105PSL-MEDOW_SABRINAPETITE_000.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00116105PSL-MEDOW_SABRINAPETITE_029.jpg"
+      ],
+      "badge": "Best seller",
+      "description": "PETITE Sabrina Curved Utility Pants - Meadow from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "lexi-mid-rise-bowed-straight-distance": {
+      "handle": "lexi-mid-rise-bowed-straight-distance",
+      "title": "Lexi Mid Rise Bowed Straight - Distance",
+      "color": "Distance",
+      "price": "$188.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/LEXI_DISTANCE_0050.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/LEXI_DISTANCE_0054.jpg"
+      ],
+      "badge": "New",
+      "description": "Lexi Mid Rise Bowed Straight - Distance from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "lexi-mid-rise-bowed-straight-18": {
+      "handle": "lexi-mid-rise-bowed-straight-18",
+      "title": "PETITE Lexi Mid Rise Bowed Straight - Distance",
+      "color": "Distance",
+      "price": "$188.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/Lexi-Distance.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/LEXI_DISTANCE_0043.jpg"
+      ],
+      "badge": "New",
+      "description": "PETITE Lexi Mid Rise Bowed Straight - Distance from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "lyvia-merino-polo-cardigan-tealwood-stripe": {
+      "handle": "lyvia-merino-polo-cardigan-tealwood-stripe",
+      "title": "Lyvia Merino Polo Cardigan - Tealwood Stripe",
+      "color": "Tealwood Stripe",
+      "price": "$178.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00060080-S9_TEALWOODSTRIPE_026.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00060080-S9_TEALWOODSTRIPE_032.jpg"
+      ],
+      "badge": "New",
+      "description": "Lyvia Merino Polo Cardigan - Tealwood Stripe from Pistola Denim.",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "details": []
+    },
+    "sabrina-curved-utility-pants-lindt": {
+      "handle": "sabrina-curved-utility-pants-lindt",
+      "title": "Sabrina Curved Utility Pants - Lindt",
+      "color": "Lindt",
+      "price": "$178.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00116105SL_SABRINA_035.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00116105SL_SABRINA_060.jpg"
+      ],
+      "badge": "Best seller",
+      "description": "Sabrina Curved Utility Pants - Lindt from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "petite-sabrina-curved-utility-pants-lindt": {
+      "handle": "petite-sabrina-curved-utility-pants-lindt",
+      "title": "PETITE Sabrina Curved Utility Pant - Lindt",
+      "color": "Lindt",
+      "price": "$178.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00116105SL_SABRINA_043.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00116105SL_SABRINA_067.jpg"
+      ],
+      "badge": "Best seller",
+      "description": "PETITE Sabrina Curved Utility Pant - Lindt from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "sabrina-curved-utility-pant-nautical": {
+      "handle": "sabrina-curved-utility-pant-nautical",
+      "title": "Sabrina Curved Utility Pants - Washed Black",
+      "color": "Washed Black",
+      "price": "$178.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00116105-SL_WASHEDBLACK_SABRINA_017.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00116105-SL_WASHEDBLACK_SABRINA_094.jpg"
+      ],
+      "badge": "Best seller",
+      "description": "Sabrina Curved Utility Pants - Washed Black from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "lexi-mid-rise-bowed-straight-moonwave": {
+      "handle": "lexi-mid-rise-bowed-straight-moonwave",
+      "title": "Lexi Mid Rise Bowed Straight Jean - Moonwave",
+      "color": "Moonwave",
+      "price": "$188.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00016200RLMNWVE_LEXI_014.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016200RLMNWVE_LEXI_036.jpg"
+      ],
+      "badge": "New",
+      "description": "Lexi Mid Rise Bowed Straight Jean - Moonwave from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "lexi-mid-rise-bowed-straight-black-night": {
+      "handle": "lexi-mid-rise-bowed-straight-black-night",
+      "title": "Lexi Mid Rise Bowed Straight - Black Night",
+      "color": "Black Night",
+      "price": "$188.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00016200-GA_BLACKNIGHT_LEXI_026.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016200-GA_BLACKNIGHT_LEXI_032.jpg"
+      ],
+      "badge": "New",
+      "description": "Lexi Mid Rise Bowed Straight - Black Night from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "wes-high-rise-barrel-1": {
+      "handle": "wes-high-rise-barrel-1",
+      "title": "Wes High Rise Barrel Jean - Spectacle",
+      "color": "Spectacle",
+      "price": "$198.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/WES_SPECTACLE_0019.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/WES_SPECTACLE_0024.jpg"
+      ],
+      "badge": "Best seller",
+      "description": "Wes High Rise Barrel Jean - Spectacle from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "wes-high-rise-barrel-petite": {
+      "handle": "wes-high-rise-barrel-petite",
+      "title": "PETITE Wes High Rise Barrel - Spectacle",
+      "color": "Spectacle",
+      "price": "$198.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00016820PRLSPCTL_WES_021.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016820PRLSPCTL_WES_073.jpg"
+      ],
+      "badge": "Best seller",
+      "description": "PETITE Wes High Rise Barrel - Spectacle from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "evie-high-rise-slim-boot": {
+      "handle": "evie-high-rise-slim-boot",
+      "title": "Evie High Rise Slim Boot - Penthouse",
+      "color": "Penthouse",
+      "price": "$188.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/01_c494b3e5-f424-4626-9e13-93cb9854054f.png",
+        "https://www.pistoladenim.com/cdn/shop/files/04_3cf0695d-3752-4ed7-ad14-44878d8356c9.png"
+      ],
+      "badge": "Best seller",
+      "description": "Evie High Rise Slim Boot - Penthouse from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "petite-lexi-mid-rise-bowed-straight-black-night": {
+      "handle": "petite-lexi-mid-rise-bowed-straight-black-night",
+      "title": "PETITE Lexi Mid Rise Bowed Straight - Black Night",
+      "color": "Black Night",
+      "price": "$188.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00016200-GA_BLACKNIGHT_LEXI_104.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016200-GA_BLACKNIGHT_LEXI_026.jpg"
+      ],
+      "badge": "Best seller",
+      "description": "PETITE Lexi Mid Rise Bowed Straight - Black Night from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "petite-kyra-high-rise-bowed-wide-leg-eureka": {
+      "handle": "petite-kyra-high-rise-bowed-wide-leg-eureka",
+      "title": "PETITE Kyra High Rise Bowed Wide Leg - Eureka",
+      "color": "Eureka",
+      "price": "$208.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/High-WaistedWide-LegDenimJeans.png",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016218-QL_EUREKA_KYRA_006.jpg"
+      ],
+      "badge": "New",
+      "description": "PETITE Kyra High Rise Bowed Wide Leg - Eureka from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "larsen-ankle-relaxed-flare-polaris": {
+      "handle": "larsen-ankle-relaxed-flare-polaris",
+      "title": "Larsen Ankle Relaxed Flare - Polaris",
+      "color": "Polaris",
+      "price": "$188.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00016565-RL_POLARIS_LARSENANKLE_082.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016565-RL_POLARIS_LARSENANKLE_036.jpg"
+      ],
+      "badge": "New",
+      "description": "Larsen Ankle Relaxed Flare - Polaris from Pistola Denim.",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "details": []
+    },
+    "cassie-super-high-rise-straight-polaris": {
+      "handle": "cassie-super-high-rise-straight-polaris",
+      "title": "Cassie Super High Rise Straight - Polaris",
+      "color": "Polaris",
+      "price": "$198.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00016322-RL_POLARIS_CASSIE_031.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016322-RL_POLARIS_CASSIE_047.jpg"
+      ],
+      "badge": "New",
+      "description": "Cassie Super High Rise Straight - Polaris from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "larsen-relaxed-flare-daring": {
+      "handle": "larsen-relaxed-flare-daring",
+      "title": "Larsen Relaxed Flare - Daring",
+      "color": "Daring",
+      "price": "$198.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00016560RLDARNG_LARSEN_001.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016560RLDARNG_LARSEN_017.jpg"
+      ],
+      "badge": "New",
+      "description": "Larsen Relaxed Flare - Daring from Pistola Denim.",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "details": []
+    },
+    "cassie-super-high-rise-straight-legend": {
+      "handle": "cassie-super-high-rise-straight-legend",
+      "title": "Cassie Super High Rise Straight Jean - Legend",
+      "color": "Legend",
+      "price": "$188.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00016322RLLGEND_CASSIE_012.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016322RLLGEND_CASSIE_054.jpg"
+      ],
+      "badge": "New",
+      "description": "Cassie Super High Rise Straight Jean - Legend from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    },
+    "lana-dbl-button-high-rise-ultra-wide-leg-1": {
+      "handle": "lana-dbl-button-high-rise-ultra-wide-leg-1",
+      "title": "Lana High Rise Ultra Wide Leg Jean - Jetset",
+      "color": "Jetset",
+      "price": "$208.00",
+      "images": [
+        "https://www.pistoladenim.com/cdn/shop/files/P00016056E0_JTSET_LANA_020.jpg",
+        "https://www.pistoladenim.com/cdn/shop/files/P00016056E0_JTSET_LANA_052.jpg"
+      ],
+      "badge": "New",
+      "description": "Lana High Rise Ultra Wide Leg Jean - Jetset from Pistola Denim.",
+      "sizes": [
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "details": []
+    }
+  },
+  "about": {
+    "heading": "Clothing for women going places.",
+    "subheading": "About The Brand",
+    "image": "https://www.pistoladenim.com/cdn/shop/files/grace-img2.png",
+    "paragraphs": [
+      "Pistola is a Los Angeles-based womenswear brand founded in 2013 by Grace Na. With over twenty years of experience in the apparel industry, Na was able to identify whitespace in the denim market. She aimed to offer high-quality pieces with luxury construction and fabrication at a lower price than her counterparts. With her extensive knowledge of the industry, she made her vision a reality.",
+      "Over the last decade, the brand has naturally evolved into new categories, offering everyday premium pieces with street-smart and utilitarian sensibility. Two things have remained consistent since the brand's inception \u2014 quality and ease. Pistola continues to produce clothing for a busy, modern, and city-dwelling woman who demands her clothing work as hard as she does. Evolution is in our DNA, but our mission to bring women superior products at sensible prices will never change."
+    ]
+  }
+}

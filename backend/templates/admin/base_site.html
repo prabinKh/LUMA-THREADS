@@ -1,0 +1,31 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}Luma Threads | {{ title }} - Admin Console{% endblock %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'admin/css/custom_admin.css' %}">
+{% endblock %}
+
+{% block branding %}
+<div id="site-name">
+  <a href="{% url 'admin:index' %}">
+    <span style="display:inline-block; width:10px; height:10px; background:#10b981; border-radius:50%; margin-right:8px;"></span>
+    <strong>LUMA THREADS</strong>
+    <span style="font-size:11px; font-weight:400; opacity:0.75; letter-spacing:1px; margin-left:6px;">MANAGEMENT CONSOLE</span>
+  </a>
+</div>
+{% endblock %}
+
+{% block nav-global %}
+<div style="float: right; margin-right: 15px; margin-top: 10px;">
+  <a href="/dashboard/" style="background: rgba(255,255,255,0.1); color:#fff; padding:6px 14px; border-radius:4px; font-size:12px; font-weight:600; text-decoration:none; margin-right:8px; border:1px solid rgba(255,255,255,0.2);">
+    📊 Product Dashboard
+  </a>
+  <a href="http://localhost:3000/" target="_blank" style="background: rgba(255,255,255,0.1); color:#fff; padding:6px 14px; border-radius:4px; font-size:12px; font-weight:600; text-decoration:none; border:1px solid rgba(255,255,255,0.2);">
+    🛍️ View Live Store ↗
+  </a>
+</div>
+{% endblock %}
+
