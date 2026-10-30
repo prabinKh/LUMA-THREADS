@@ -86,23 +86,40 @@
           <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 18px; color: #0f172a;">Category &amp; Taxonomy</h3>
 
           <div class="form-group" style="margin-bottom: 16px;">
-            <label class="form-label">Primary Category *</label>
-            <select id="prodCategory" class="dash-select" style="width: 100%;" onchange="filterSubcategories()" required>
-              <option value="">-- Select Category --</option>
-              {% for cat in categories %}
-                <option value="{{ cat.id }}">{{ cat.title }}</option>
-              {% endfor %}
-            </select>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label class="form-label" style="margin-bottom: 0;">Primary Category *</label>
+              <button type="button" class="dash-btn dash-btn-outline" style="padding: 2px 8px; font-size: 11.5px; height: 26px;" onclick="openQuickCatModal()" title="Create New Category">
+                + New Category
+              </button>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <select id="prodCategory" class="dash-select" style="width: 100%;" onchange="filterSubcategories()" required>
+                <option value="">-- Select Category --</option>
+                {% for cat in categories %}
+                  <option value="{{ cat.id }}">{{ cat.title }}</option>
+                {% endfor %}
+              </select>
+              <button type="button" class="dash-btn dash-btn-accent" style="padding: 0 12px; font-size: 16px; font-weight: bold; flex-shrink: 0;" onclick="openQuickCatModal()" title="Create New Category">+</button>
+            </div>
           </div>
 
           <div class="form-group" style="margin-bottom: 16px;">
-            <label class="form-label">Subcategory (Optional)</label>
-            <select id="prodSubCategory" class="dash-select" style="width: 100%;">
-              <option value="">-- None / Select Subcategory --</option>
-              {% for sub in subcategories %}
-                <option value="{{ sub.id }}" data-parent-cat="{{ sub.category_id }}">{{ sub.title }} ({{ sub.category.title }})</option>
-              {% endfor %}
-            </select>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label class="form-label" style="margin-bottom: 0;">Subcategory (Optional)</label>
+              <button type="button" class="dash-btn dash-btn-outline" style="padding: 2px 8px; font-size: 11.5px; height: 26px;" onclick="openQuickSubModal()" title="Create Subcategory for selected category">
+                + New Subcategory
+              </button>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <select id="prodSubCategory" class="dash-select" style="width: 100%;">
+                <option value="">-- None / Select Subcategory --</option>
+                {% for sub in subcategories %}
+                  <option value="{{ sub.id }}" data-parent-cat="{{ sub.category_id }}">{{ sub.title }} ({{ sub.category.title }})</option>
+                {% endfor %}
+              </select>
+              <button type="button" class="dash-btn dash-btn-outline" style="padding: 0 12px; font-size: 16px; font-weight: bold; flex-shrink: 0;" onclick="openQuickSubModal()" title="Create Subcategory for selected category">+</button>
+            </div>
+            <span style="font-size: 11px; color: #64748b; margin-top: 4px; display: block;">Select a Category first to create a nested subcategory under it.</span>
           </div>
 
           <div class="form-group">
@@ -145,6 +162,64 @@
 </section>
 {% endblock %}
 
+{% block modals %}
+<!-- Quick Add Category Modal -->
+<div id="modalQuickCategory" class="modal-backdrop">
+  <div class="modal-window" style="max-width: 440px;">
+    <div class="modal-header">
+      <h3>+ Add New Category</h3>
+      <button type="button" class="modal-close-btn" onclick="closeQuickCatModal()">×</button>
+    </div>
+    <form id="formQuickCat" onsubmit="submitQuickCategory(event)">
+      <div style="padding: 20px;">
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label">Category Title *</label>
+          <input type="text" id="quickCatTitleInput" class="form-input" placeholder="e.g. Knitwear & Sweaters" required onkeyup="document.getElementById('quickCatSlugInput').value = this.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')">
+        </div>
+        <div class="form-group">
+          <label class="form-label">URL Slug / Handle</label>
+          <input type="text" id="quickCatSlugInput" class="form-input" placeholder="knitwear-sweaters">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="dash-btn dash-btn-outline" onclick="closeQuickCatModal()">Cancel</button>
+        <button type="submit" id="btnQuickCatSave" class="dash-btn dash-btn-accent">Save &amp; Select Category</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Quick Add Subcategory Modal (Mandatory Parent Category) -->
+<div id="modalQuickSubcategory" class="modal-backdrop">
+  <div class="modal-window" style="max-width: 460px;">
+    <div class="modal-header">
+      <h3>+ Add New Subcategory</h3>
+      <button type="button" class="modal-close-btn" onclick="closeQuickSubModal()">×</button>
+    </div>
+    <form id="formQuickSub" onsubmit="submitQuickSubcategory(event)">
+      <div style="padding: 20px;">
+        <div style="background: #eff6ff; padding: 12px 14px; border-radius: 8px; border-left: 4px solid #2563eb; margin-bottom: 16px;">
+          <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #1d4ed8;">Parent Category:</div>
+          <strong id="quickSubParentName" style="font-size: 15px; color: #1e40af;">None Selected</strong>
+        </div>
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label">Subcategory Name *</label>
+          <input type="text" id="quickSubTitleInput" class="form-input" placeholder="e.g. Cardigans, Barrel Leg" required onkeyup="document.getElementById('quickSubSlugInput').value = this.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')">
+        </div>
+        <div class="form-group">
+          <label class="form-label">URL Slug / Handle</label>
+          <input type="text" id="quickSubSlugInput" class="form-input" placeholder="cardigans">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="dash-btn dash-btn-outline" onclick="closeQuickSubModal()">Cancel</button>
+        <button type="submit" id="btnQuickSubSave" class="dash-btn dash-btn-accent">Save &amp; Select Subcategory</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
 {% block extra_js %}
 <script>
   function autoGenerateHandle() {
@@ -161,6 +236,124 @@
       opt.style.display = (!catId || parentId === catId) ? 'block' : 'none';
     });
     subSelect.value = '';
+  }
+
+  // --- Quick Category Creation ---
+  function openQuickCatModal() {
+    document.getElementById('quickCatTitleInput').value = '';
+    document.getElementById('quickCatSlugInput').value = '';
+    document.getElementById('modalQuickCategory').classList.add('active');
+    setTimeout(() => { document.getElementById('quickCatTitleInput').focus(); }, 150);
+  }
+
+  function closeQuickCatModal() {
+    document.getElementById('modalQuickCategory').classList.remove('active');
+  }
+
+  async function submitQuickCategory(e) {
+    e.preventDefault();
+    const title = document.getElementById('quickCatTitleInput').value.trim();
+    const handle = document.getElementById('quickCatSlugInput').value.trim();
+    const btn = document.getElementById('btnQuickCatSave');
+    btn.disabled = true;
+    btn.innerText = 'Saving...';
+
+    try {
+      const res = await fetch('/dashboard/api/categories/add/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'category', title, handle })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        // Append to dropdown and select it
+        const catSelect = document.getElementById('prodCategory');
+        const opt = document.createElement('option');
+        opt.value = data.id;
+        opt.innerText = title;
+        opt.selected = true;
+        catSelect.appendChild(opt);
+        filterSubcategories();
+
+        showToast(`Category "${title}" created and selected!`);
+        closeQuickCatModal();
+      } else {
+        showToast(data.error || 'Failed to create category', true);
+      }
+    } catch {
+      showToast('Error communicating with server', true);
+    } finally {
+      btn.disabled = false;
+      btn.innerText = 'Save & Select Category';
+    }
+  }
+
+  // --- Quick Subcategory Creation (Mandatory Parent Category) ---
+  function openQuickSubModal() {
+    const catSelect = document.getElementById('prodCategory');
+    const catId = catSelect.value;
+    if (!catId) {
+      showToast('⚠️ Mandatory: Please select a Primary Category first before creating a subcategory!', true);
+      catSelect.focus();
+      return;
+    }
+    const catName = catSelect.options[catSelect.selectedIndex].text;
+    document.getElementById('quickSubParentName').innerText = catName;
+    document.getElementById('quickSubTitleInput').value = '';
+    document.getElementById('quickSubSlugInput').value = '';
+    document.getElementById('modalQuickSubcategory').classList.add('active');
+    setTimeout(() => { document.getElementById('quickSubTitleInput').focus(); }, 150);
+  }
+
+  function closeQuickSubModal() {
+    document.getElementById('modalQuickSubcategory').classList.remove('active');
+  }
+
+  async function submitQuickSubcategory(e) {
+    e.preventDefault();
+    const catSelect = document.getElementById('prodCategory');
+    const catId = catSelect.value;
+    const catName = catSelect.options[catSelect.selectedIndex].text;
+    const title = document.getElementById('quickSubTitleInput').value.trim();
+    const handle = document.getElementById('quickSubSlugInput').value.trim();
+
+    if (!catId) {
+      showToast('Parent Category is mandatory!', true);
+      return;
+    }
+
+    const btn = document.getElementById('btnQuickSubSave');
+    btn.disabled = true;
+    btn.innerText = 'Saving...';
+
+    try {
+      const res = await fetch('/dashboard/api/categories/add/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'subcategory', parent_id: catId, title, handle })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        // Append to subcategory dropdown and select it
+        const subSelect = document.getElementById('prodSubCategory');
+        const opt = document.createElement('option');
+        opt.value = data.id;
+        opt.setAttribute('data-parent-cat', catId);
+        opt.innerText = `${title} (${catName})`;
+        opt.selected = true;
+        subSelect.appendChild(opt);
+
+        showToast(`Subcategory "${title}" created and selected!`);
+        closeQuickSubModal();
+      } else {
+        showToast(data.error || 'Failed to create subcategory', true);
+      }
+    } catch {
+      showToast('Error communicating with server', true);
+    } finally {
+      btn.disabled = false;
+      btn.innerText = 'Save & Select Subcategory';
+    }
   }
 
   function addColorRow(data = {}) {
@@ -269,3 +462,4 @@
   }
 </script>
 {% endblock %}
+
