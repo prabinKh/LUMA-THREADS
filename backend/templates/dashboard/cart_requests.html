@@ -1,0 +1,141 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Cart Requests &amp; Active Bags | Luma Threads Admin{% endblock %}
+{% block page_heading %}Customer Cart Requests &amp; Active Bags{% endblock %}
+{% block page_subheading %}Real-time monitoring of shopper bags, pending checkouts, and abandoned cart conversion opportunities{% endblock %}
+
+{% block header_actions %}
+  <a href="/dashboard/orders/" class="dash-btn dash-btn-outline">📦 View Orders</a>
+  <a href="/dashboard/products/" class="dash-btn dash-btn-accent">👗 View Catalog</a>
+{% endblock %}
+
+{% block content %}
+<section class="dashboard-page">
+
+  <div class="table-card">
+    <div class="table-toolbar">
+      <div>
+        <h2>Active Shopping Bags</h2>
+        <p style="font-size: 13px; color: #64748b;">Live cart items synchronized from shopper browser sessions</p>
+      </div>
+      <div class="filter-actions">
+        <select id="cartStatusFilter" onchange="filterCartsTable()" class="dash-select">
+          <option value="">All Cart Statuses</option>
+          <option value="active">In Bag / Active</option>
+          <option value="checkout">Checkout Initiated</option>
+          <option value="abandoned">Abandoned</option>
+          <option value="converted">Converted to Order</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="data-table" id="cartsDataTable">
+        <thead>
+          <tr>
+            <th style="width: 44px;">Item</th>
+            <th>Product &amp; Colorway</th>
+            <th>Size</th>
+            <th>Customer / Session</th>
+            <th>Price &amp; Qty</th>
+            <th>Total Value</th>
+            <th>Bag Status</th>
+            <th>Last Active</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in cart_requests %}
+          <tr class="cart-row" data-status="{{ c.status|lower }}">
+            <td>
+              <div class="table-img-wrap" style="width: 38px; height: 48px;">
+                <img src="{{ c.image_url|default:'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=100&q=80' }}" alt="{{ c.product_name }}">
+              </div>
+            </td>
+            <td>
+              <strong>{{ c.product_name }}</strong>
+              <div style="font-size: 11px; color: #64748b;">Color: <strong>{{ c.color|default:"Default" }}</strong></div>
+            </td>
+            <td>
+              <span class="badge" style="background: #f1f5f9; color: #334155; font-weight: 700;">{{ c.size|default:"26" }}</span>
+            </td>
+            <td>
+              <div><strong>{{ c.customer_name|default:"Online Shopper" }}</strong></div>
+              <div style="font-size: 11px; color: #64748b; font-family: monospace;">{{ c.session_id|slice:":16" }}</div>
+              {% if c.customer_email %}
+                <div style="font-size: 11px; color: #2563eb;">{{ c.customer_email }}</div>
+              {% endif %}
+            </td>
+            <td>
+              <div>${{ c.price }} × {{ c.quantity }}</div>
+            </td>
+            <td>
+              <strong style="color: #0f172a; font-size: 14.5px;">${{ c.total_value|default:c.price }}</strong>
+            </td>
+            <td>
+              {% if c.status == "active" %}
+                <span class="badge" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">Active In Bag</span>
+              {% elif c.status == "checkout" %}
+                <span class="badge" style="background: #fefce8; color: #a16207; border: 1px solid #fef08a;">Checkout Started</span>
+              {% elif c.status == "converted" %}
+                <span class="badge" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">✓ Converted</span>
+              {% else %}
+                <span class="badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;">Abandoned</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="font-size: 12px; color: #64748b;">{{ c.updated_at|date:"M d, h:i A" }}</div>
+            </td>
+            <td style="text-align: right; white-space: nowrap;">
+              <select onchange="updateCartStatus({{ c.id }}, this.value)" class="dash-select" style="padding: 4px 8px; font-size: 11.5px;">
+                <option value="active" {% if c.status == "active" %}selected{% endif %}>Active</option>
+                <option value="checkout" {% if c.status == "checkout" %}selected{% endif %}>Checkout</option>
+                <option value="converted" {% if c.status == "converted" %}selected{% endif %}>Converted</option>
+                <option value="abandoned" {% if c.status == "abandoned" %}selected{% endif %}>Abandoned</option>
+              </select>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" style="text-align: center; padding: 40px; color: #64748b;">No cart activity recorded yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function filterCartsTable() {
+    const filter = document.getElementById('cartStatusFilter').value.toLowerCase();
+    const rows = document.querySelectorAll('#cartsDataTable tbody tr.cart-row');
+    rows.forEach(r => {
+      const st = r.getAttribute('data-status') || '';
+      r.style.display = (!filter || st === filter) ? '' : 'none';
+    });
+  }
+
+  async function updateCartStatus(cartId, newStatus) {
+    try {
+      const res = await fetch(`/dashboard/api/cart-requests/${cartId}/status/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(`Cart marked as ${newStatus}`);
+        setTimeout(() => { window.location.reload(); }, 500);
+      } else {
+        showToast(data.error || 'Failed to update status', true);
+      }
+    } catch {
+      showToast('Network error while updating cart status', true);
+    }
+  }
+</script>
+{% endblock %}

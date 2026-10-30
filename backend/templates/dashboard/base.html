@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Luma Threads | Store &amp; Product Admin{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/dashboard.css">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+  <!-- ========================================================================
+       1. LEFT-SIDEBAR NAVIGATION
+       ======================================================================== -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-header">
+      <a href="/dashboard/" class="sidebar-brand">
+        <span class="brand-indicator"></span>
+        LUMA THREADS
+      </a>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li class="menu-label">Main Navigation</li>
+      <li class="menu-item {% if active_tab == 'overview' %}active{% endif %}">
+        <a href="/dashboard/">
+          <span>📊</span> Overview
+        </a>
+      </li>
+      <li class="menu-item {% if active_tab == 'products' or active_tab == 'product_add' or active_tab == 'product_edit' %}active{% endif %}">
+        <a href="/dashboard/products/">
+          <span>👗</span> Products &amp; Catalog
+        </a>
+      </li>
+      <li class="menu-item {% if active_tab == 'categories' %}active{% endif %}">
+        <a href="/dashboard/categories/">
+          <span>📁</span> Categories &amp; Subcategories
+        </a>
+      </li>
+      <li class="menu-item {% if active_tab == 'orders' or active_tab == 'order_detail' %}active{% endif %}">
+        <a href="/dashboard/orders/">
+          <span>📦</span> Orders &amp; Live Tracking
+        </a>
+      </li>
+      <li class="menu-item {% if active_tab == 'cart_requests' %}active{% endif %}">
+        <a href="/dashboard/cart-requests/">
+          <span>🛒</span> Cart Requests &amp; Bags
+        </a>
+      </li>
+      <li class="menu-item {% if active_tab == 'customers' %}active{% endif %}">
+        <a href="/dashboard/customers/">
+          <span>👥</span> Customers &amp; Users
+        </a>
+      </li>
+
+      <li class="menu-label">Quick Actions</li>
+      <li class="menu-item">
+        <a href="/dashboard/products/add/">
+          <span>➕</span> Add New Product
+        </a>
+      </li>
+
+      <li class="menu-label">Storefront &amp; System</li>
+      <li class="menu-item">
+        <a href="http://localhost:3000/" target="_blank">
+          <span>🛍️</span> Live Storefront ↗
+        </a>
+      </li>
+      <li class="menu-item">
+        <a href="http://localhost:3000/orders/track" target="_blank">
+          <span>🚚</span> Customer Tracking ↗
+        </a>
+      </li>
+      <li class="menu-item">
+        <a href="/admin/" target="_blank">
+          <span>⚙️</span> Django Admin ↗
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div>Signed in as <strong>Store Admin</strong></div>
+      <div style="font-size: 11px; margin-top: 4px; color: #94a3b8;">Luma Threads OS v2.0 • Django + Next.js</div>
+    </div>
+  </aside>
+
+  <!-- ========================================================================
+       2. MAIN CONTENT AREA
+       ======================================================================== -->
+  <div class="admin-main">
+
+    <!-- Top Sticky Header Bar -->
+    <header class="top-header">
+      <div class="header-title">
+        <h1 id="page-heading">{% block page_heading %}Overview Dashboard{% endblock %}</h1>
+        <p id="page-subheading">{% block page_subheading %}Store performance, live orders, products, and customer activity{% endblock %}</p>
+      </div>
+
+      <div class="header-actions">
+        {% block header_actions %}
+          <a href="/dashboard/categories/" class="dash-btn dash-btn-outline">+ Categories</a>
+          <a href="/dashboard/products/add/" class="dash-btn dash-btn-accent">+ Add Product</a>
+        {% endblock %}
+      </div>
+    </header>
+
+    <div class="page-container">
+      {% block content %}{% endblock %}
+    </div>
+
+  </div>
+
+  <!-- Common Toast Notification Notice -->
+  <div id="toastNotification" class="toast-notice" style="display: none;">
+    <span id="toastIcon" class="toast-icon">✓</span>
+    <span id="toastMsg" class="toast-msg">Operation completed successfully.</span>
+  </div>
+
+  {% block modals %}{% endblock %}
+
+  <script>
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toastNotification');
+      if (!toast) return;
+      document.getElementById('toastMsg').innerText = message;
+      document.getElementById('toastIcon').innerText = isError ? '✕' : '✓';
+      toast.style.background = isError ? '#ef4444' : '#0f172a';
+      toast.style.display = 'flex';
+      setTimeout(() => { toast.style.display = 'none'; }, 3500);
+    }
+  </script>
+  {% block extra_js %}{% endblock %}
+
+</body>
+</html>

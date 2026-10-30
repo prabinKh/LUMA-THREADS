@@ -9,27 +9,20 @@ from orders.models import Order, OrderItem, CartRequest
 from accounts.models import User
 
 
-def dashboard_view(request):
-    products = (
-        Product.objects.all()
-        .select_related("category", "subcategory")
-        .prefetch_related("color_variants", "variants")
-        .order_by("-created_at")
-    )
-    categories = Category.objects.all().prefetch_related("subcategories").order_by("order", "title")
-    subcategories = SubCategory.objects.all().select_related("category").order_by("order", "title")
+def get_dashboard_metrics():
     orders = Order.objects.all().prefetch_related("items").order_by("-created_at")
+    products = Product.objects.all()
+    categories = Category.objects.all().prefetch_related("subcategories")
+    subcategories = SubCategory.objects.all()
     cart_requests = CartRequest.objects.all().order_by("-updated_at")
-    users = User.objects.all().annotate(orders_count=Count("orders")).order_by("-date_joined")
+    users = User.objects.all().annotate(orders_count=Count("orders"))
 
-    # Metrics calculation
     total_revenue = orders.filter(~Q(status="cancelled")).aggregate(total=Sum("total_amount"))["total"] or Decimal("0.00")
     total_orders_count = orders.count()
     total_products_count = products.count()
     total_users_count = users.count()
     active_carts_count = cart_requests.filter(status__in=["active", "checkout"]).count()
 
-    # Status distribution
     status_counts = {
         "processing": orders.filter(status="processing").count(),
         "shipped": orders.filter(status="shipped").count(),
@@ -37,7 +30,6 @@ def dashboard_view(request):
         "cancelled": orders.filter(status="cancelled").count(),
     }
 
-    # Payment distribution
     payment_counts = {
         "esewa": orders.filter(payment_method__icontains="esewa").count(),
         "bank": orders.filter(payment_method__icontains="bank").count(),
@@ -45,14 +37,7 @@ def dashboard_view(request):
         "card": orders.filter(payment_method__icontains="card").count(),
     }
 
-    context = {
-        "products": products,
-        "categories": categories,
-        "subcategories": subcategories,
-        "orders": orders,
-        "recent_orders": orders[:6],
-        "cart_requests": cart_requests,
-        "users": users,
+    return {
         "total_revenue": total_revenue,
         "total_orders_count": total_orders_count,
         "total_products_count": total_products_count,
@@ -62,9 +47,126 @@ def dashboard_view(request):
         "payment_counts": payment_counts,
         "categories_count": categories.count(),
         "subcategories_count": subcategories.count(),
-        "variants_count": ProductVariant.objects.count(),
     }
-    return render(request, "dashboard.html", context)
+
+
+def dashboard_overview_view(request):
+    """Individual Page 1: Dashboard Overview & Real-Time Analytics."""
+    metrics = get_dashboard_metrics()
+    orders = Order.objects.all().prefetch_related("items").order_by("-created_at")
+    context = {
+        **metrics,
+        "active_tab": "overview",
+        "recent_orders": orders[:8],
+    }
+    return render(request, "dashboard/overview.html", context)
+
+
+def dashboard_products_view(request):
+    """Individual Page 2: Products & Catalog Inventory."""
+    products = (
+        Product.objects.all()
+        .select_related("category", "subcategory")
+        .prefetch_related("color_variants", "variants")
+        .order_by("-created_at")
+    )
+    categories = Category.objects.all().order_by("order", "title")
+    context = {
+        "products": products,
+        "categories": categories,
+        "active_tab": "products",
+    }
+    return render(request, "dashboard/products.html", context)
+
+
+def dashboard_product_add_view(request):
+    """Individual Page 3: Add New Product Form."""
+    categories = Category.objects.all().order_by("order", "title")
+    subcategories = SubCategory.objects.all().select_related("category").order_by("order", "title")
+    context = {
+        "categories": categories,
+        "subcategories": subcategories,
+        "active_tab": "product_add",
+    }
+    return render(request, "dashboard/product_add.html", context)
+
+
+def dashboard_product_edit_view(request, handle_or_id):
+    """Individual Page 4: Edit Product Form."""
+    product = None
+    if str(handle_or_id).isdigit():
+        product = Product.objects.filter(id=handle_or_id).first()
+    if not product:
+        product = Product.objects.filter(handle=handle_or_id).first()
+    if not product:
+        product = get_object_or_404(Product, handle=handle_or_id)
+
+    categories = Category.objects.all().order_by("order", "title")
+    subcategories = SubCategory.objects.all().select_related("category").order_by("order", "title")
+    context = {
+        "product": product,
+        "categories": categories,
+        "subcategories": subcategories,
+        "active_tab": "products",
+    }
+    return render(request, "dashboard/product_edit.html", context)
+
+
+def dashboard_categories_view(request):
+    """Individual Page 5: Categories & Subcategories Hierarchy."""
+    categories = Category.objects.all().prefetch_related("subcategories", "products").order_by("order", "title")
+    subcategories = SubCategory.objects.all().select_related("category").prefetch_related("products").order_by("order", "title")
+    context = {
+        "categories": categories,
+        "subcategories": subcategories,
+        "active_tab": "categories",
+    }
+    return render(request, "dashboard/categories.html", context)
+
+
+def dashboard_orders_view(request):
+    """Individual Page 6: Orders & Live Fulfillment Tracking."""
+    orders = Order.objects.all().prefetch_related("items").order_by("-created_at")
+    context = {
+        "orders": orders,
+        "active_tab": "orders",
+    }
+    return render(request, "dashboard/orders.html", context)
+
+
+def dashboard_order_detail_view(request, order_id):
+    """Individual Page 7: Order Detail & Itemized Tax Invoice."""
+    order = get_object_or_404(Order.objects.prefetch_related("items"), id=order_id)
+    context = {
+        "order": order,
+        "active_tab": "orders",
+    }
+    return render(request, "dashboard/order_detail.html", context)
+
+
+def dashboard_cart_requests_view(request):
+    """Individual Page 8: Customer Cart Requests & Real-time Bags."""
+    cart_requests = CartRequest.objects.all().order_by("-updated_at")
+    context = {
+        "cart_requests": cart_requests,
+        "active_tab": "cart_requests",
+    }
+    return render(request, "dashboard/cart_requests.html", context)
+
+
+def dashboard_customers_view(request):
+    """Individual Page 9: Customers & Registered Users Directory."""
+    users = User.objects.all().annotate(orders_count=Count("orders")).order_by("-date_joined")
+    context = {
+        "users": users,
+        "active_tab": "customers",
+    }
+    return render(request, "dashboard/customers.html", context)
+
+
+def dashboard_view(request):
+    """Alias pointing to the Overview individual page."""
+    return dashboard_overview_view(request)
 
 
 @csrf_exempt

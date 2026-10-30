@@ -685,13 +685,10 @@ body {
    MULTI-PAGE DASHBOARD TABS & INDUSTRY-LEVEL ADMIN COMPONENTS
    ========================================================================== */
 
-.dashboard-view-page {
-  display: none;
-  animation: fadeIn 0.2s ease-in-out;
-}
-
-.dashboard-view-page.active {
+.dashboard-view-page,
+.dashboard-page {
   display: block;
+  animation: fadeIn 0.2s ease-in-out;
 }
 
 @keyframes fadeIn {
@@ -898,13 +895,10 @@ body {
    MULTI-PAGE DASHBOARD TABS & INDUSTRY-LEVEL ADMIN COMPONENTS
    ========================================================================== */
 
-.dashboard-view-page {
-  display: none;
-  animation: fadeIn 0.2s ease-in-out;
-}
-
-.dashboard-view-page.active {
+.dashboard-view-page,
+.dashboard-page {
   display: block;
+  animation: fadeIn 0.2s ease-in-out;
 }
 
 @keyframes fadeIn {

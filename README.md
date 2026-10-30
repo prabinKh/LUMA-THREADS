@@ -33,40 +33,45 @@ A high-performance modern e-commerce platform and industry-level store managemen
 
 ---
 
-### 🏢 Store Admin Management Suite (`/dashboard/`)
+### 🏢 Store Admin Management Suite (Dedicated Multi-Page Architecture)
 
-#### 8. Admin Overview & Analytics Dashboard
+Each management module is built as an **independent, dedicated HTML/CSS page** with its own distinct URL, navigation highlight, and view controllers:
+
+#### 8. Overview & Analytics (`/dashboard/` or `/dashboard/overview/`)
 *Real-time KPIs: Gross Revenue, Active Orders, Product Catalog count, Customer Base, and Payment Channel distribution.*
 ![Admin Overview](screenshots/08_dashboard_overview.png)
 
-#### 9. Product & Inventory Management
-*Visual hex swatches, per-color pricing chips, size badges, and full CRUD operations.*
+#### 9. Product & Inventory Catalog (`/dashboard/products/`)
+*Visual hex swatches, per-color pricing chips, size badges, search/filter controls, and edit/delete actions.*
 ![Admin Products](screenshots/09_dashboard_products.png)
 
-#### 10. Categories & Subcategories Tree Hierarchy
-*Category hierarchy tree with mandatory parent category enforcement for subcategory creation.*
-![Admin Categories](screenshots/10_dashboard_categories.png)
+#### 10. Add New Product (`/dashboard/products/add/`)
+*Dedicated full creation page with dynamic multi-colorway swatch builder, visual hex color picker, size runs, and category/subcategory filtering.*
+![Add Product Page](screenshots/10_dashboard_product_add.png)
 
-#### 11. Orders & Live Fulfillment Tracking
-*Order status progression, carrier assignment (FedEx, DHL, Nepal Post, Aramex), and live tracking numbers.*
-![Admin Orders & Tracking](screenshots/11_dashboard_orders_tracking.png)
+#### 11. Edit Product & Colorways (`/dashboard/products/<handle_or_id>/edit/`)
+*Dedicated full product editor for updating variant prices, primary images, descriptions, and hex swatches.*
+![Edit Product Page](screenshots/11_dashboard_product_edit.png)
 
-#### 12. Cart Requests & Real-Time Abandoned Bag Monitoring
-*Asynchronous background sync capturing customer shopping bags, checkout drop-offs, and conversion opportunities.*
-![Admin Cart Requests](screenshots/12_dashboard_cart_requests.png)
+#### 12. Categories & Subcategories Tree Hierarchy (`/dashboard/categories/`)
+*Complete taxonomy management page with nested subcategories, product count indicators, and mandatory parent category selection.*
+![Admin Categories](screenshots/12_dashboard_categories.png)
 
-#### 13. Customer Directory & User Profiles
-*Customer spend metrics, order counts, and manual customer registration.*
-![Admin Customers](screenshots/13_dashboard_customers_list.png)
+#### 13. Orders & Live Fulfillment Tracking (`/dashboard/orders/`)
+*Order status progression, carrier assignment (FedEx, DHL, Nepal Post, Aramex), tracking numbers, and quick dispatch.*
+![Admin Orders & Tracking](screenshots/13_dashboard_orders_tracking.png)
 
-#### 14. Carrier Assignment & Shipment Tracking Modal
-![Tracking Modal](screenshots/14_dashboard_tracking_modal.png)
+#### 14. Itemized Tax Invoice & Dispatch Detail (`/dashboard/orders/<id>/`)
+*Dedicated printable tax invoice page with itemized customer breakdowns, shipping details, and live carrier tracking updates.*
+![Order Invoice Detail](screenshots/14_dashboard_order_invoice.png)
 
-#### 15. Itemized Printable Tax Invoice Modal
-![Invoice Modal](screenshots/15_dashboard_invoice_modal.png)
+#### 15. Cart Requests & Real-Time Abandoned Bag Monitoring (`/dashboard/cart-requests/`)
+*Asynchronous background sync capturing customer shopping bags, checkout drop-offs, and conversion lifecycle states.*
+![Admin Cart Requests](screenshots/15_dashboard_cart_requests.png)
 
-#### 16. Dynamic Product Creator with Visual Hex Picker
-![Add Product Modal](screenshots/16_dashboard_add_product_modal.png)
+#### 16. Customer Directory & User Profiles (`/dashboard/customers/`)
+*Customer purchasing metrics, order counts, role assignments, and manual customer registration.*
+![Admin Customers](screenshots/16_dashboard_customers_list.png)
 
 ---
 
@@ -78,11 +83,12 @@ A high-performance modern e-commerce platform and industry-level store managemen
 - **Cart Sync:** Customer actions asynchronously register to the Django admin Cart Requests table.
 - **Payment Methods:** Support for **eSewa**, **Bank Transfer**, **Cash on Delivery (COD)**, and **Credit Cards**.
 
-### 🏢 Management Dashboard (`/backend/dashboard/`)
-- **Single-Page Hash Navigation:** Deep-linked switching between `#overview`, `#products`, `#categories`, `#orders`, `#cart-requests`, and `#customers` with zero page reloads.
-- **Shipment Tracking Engine:** Update carrier, tracking ID, and milestone statuses in real-time.
-- **Printable Invoices:** Formatted invoice modal with complete billing, tax, and itemized breakdowns.
-- **Cart Monitoring:** Tracks active, checkout, converted, and abandoned shopping bags.
+### 🏢 Store Admin Suite (`/backend/dashboard/`)
+- **Multi-Page Architecture:** Each page is an individual HTML & CSS template with its own URL, eliminating single-page display issues.
+- **Dedicated Product Editor:** Full separate pages for adding (`/products/add/`) and editing (`/products/<id>/edit/`) products with multi-color swatches.
+- **Fulfillment & Tracking Engine:** Assign carrier partners (**FedEx**, **DHL**, **Nepal Post**, **Aramex**) and generate real-time tracking numbers (`TRK-...`).
+- **Printable Invoices:** Dedicated invoice view (`/orders/<id>/`) with formatted itemized billing and print layout (`window.print()`).
+- **Cart Monitoring:** Real-time visibility into active shopper bags, checkout drop-offs, and conversions.
 
 ---
 

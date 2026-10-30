@@ -88,62 +88,27 @@ def main():
         time.sleep(1.5)
         page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "07_order_tracking_portal.png"))
 
-        # --- ADMIN DASHBOARD TABS ---
-        dash_tabs = [
-            ("08_dashboard_overview.png", "overview"),
-            ("09_dashboard_products.png", "products"),
-            ("10_dashboard_categories.png", "categories"),
-            ("11_dashboard_orders_tracking.png", "orders"),
-            ("12_dashboard_cart_requests.png", "cart-requests"),
-            ("13_dashboard_customers_list.png", "customers"),
+        # --- DEDICATED INDIVIDUAL ADMIN DASHBOARD PAGES ---
+        admin_pages = [
+            ("08_dashboard_overview.png", "http://127.0.0.1:8000/dashboard/"),
+            ("09_dashboard_products.png", "http://127.0.0.1:8000/dashboard/products/"),
+            ("10_dashboard_product_add.png", "http://127.0.0.1:8000/dashboard/products/add/"),
+            ("11_dashboard_product_edit.png", "http://127.0.0.1:8000/dashboard/products/evie-high-rise-slim-boot/edit/"),
+            ("12_dashboard_categories.png", "http://127.0.0.1:8000/dashboard/categories/"),
+            ("13_dashboard_orders_tracking.png", "http://127.0.0.1:8000/dashboard/orders/"),
+            ("14_dashboard_order_invoice.png", "http://127.0.0.1:8000/dashboard/orders/2/"),
+            ("15_dashboard_cart_requests.png", "http://127.0.0.1:8000/dashboard/cart-requests/"),
+            ("16_dashboard_customers_list.png", "http://127.0.0.1:8000/dashboard/customers/"),
         ]
 
-        page.goto("http://127.0.0.1:8000/dashboard/", wait_until="networkidle")
-        time.sleep(1.5)
-
-        for filename, tab in dash_tabs:
-            print(f"Capturing Dashboard Tab [{tab}] -> {filename}...")
-            page.evaluate(f"switchTab('{tab}');")
-            time.sleep(1)
+        for filename, url in admin_pages:
+            print(f"Capturing Individual Admin Page [{url}] -> {filename}...")
+            page.goto(url, wait_until="networkidle")
+            time.sleep(1.5)
             page.screenshot(path=os.path.join(SCREENSHOTS_DIR, filename))
 
-        # 14. Dashboard Tracking Modal
-        print("Capturing 14_dashboard_tracking_modal.png...")
-        page.evaluate("switchTab('orders');")
-        time.sleep(0.5)
-        track_btn = page.query_selector("button:has-text('Track')")
-        if track_btn:
-            track_btn.click()
-            time.sleep(0.8)
-            page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "14_dashboard_tracking_modal.png"))
-            page.evaluate("closeTrackingModal();")
-            time.sleep(0.5)
-
-        # 15. Dashboard Invoice Modal
-        print("Capturing 15_dashboard_invoice_modal.png...")
-        invoice_btn = page.query_selector("button:has-text('Invoice')")
-        if invoice_btn:
-            invoice_btn.click()
-            time.sleep(0.8)
-            page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "15_dashboard_invoice_modal.png"))
-            page.evaluate("closeOrderDetailModal();")
-            time.sleep(0.5)
-
-        # 16. Dashboard Add Product Modal
-        print("Capturing 16_dashboard_add_product_modal.png...")
-        page.evaluate("switchTab('products');")
-        time.sleep(0.5)
-        add_btn = page.query_selector("button:has-text('Add Product')")
-        if add_btn:
-            add_btn.click()
-            time.sleep(0.8)
-            page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "16_dashboard_add_product_modal.png"))
-            page.evaluate("closeCreateModal();")
-            time.sleep(0.5)
-
         browser.close()
-    print("All screenshots successfully captured!")
+    print("All individual screenshots successfully captured!")
 
 if __name__ == "__main__":
     main()
-

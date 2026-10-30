@@ -7,6 +7,15 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from products.dashboard_views import (
     dashboard_view,
+    dashboard_overview_view,
+    dashboard_products_view,
+    dashboard_product_add_view,
+    dashboard_product_edit_view,
+    dashboard_categories_view,
+    dashboard_orders_view,
+    dashboard_order_detail_view,
+    dashboard_cart_requests_view,
+    dashboard_customers_view,
     api_product_create,
     api_product_detail,
     api_add_category,
@@ -43,8 +52,18 @@ def api_root(request):
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    # Industry-level Store Admin Dashboard Views & APIs
-    path("dashboard/", dashboard_view, name="dashboard"),
+    # Industry-level Store Admin Individual Pages
+    path("dashboard/", dashboard_overview_view, name="dashboard-overview"),
+    path("dashboard/overview/", dashboard_overview_view, name="dashboard-overview-alias"),
+    path("dashboard/products/", dashboard_products_view, name="dashboard-products"),
+    path("dashboard/products/add/", dashboard_product_add_view, name="dashboard-product-add"),
+    path("dashboard/products/<str:handle_or_id>/edit/", dashboard_product_edit_view, name="dashboard-product-edit"),
+    path("dashboard/categories/", dashboard_categories_view, name="dashboard-categories"),
+    path("dashboard/orders/", dashboard_orders_view, name="dashboard-orders"),
+    path("dashboard/orders/<int:order_id>/", dashboard_order_detail_view, name="dashboard-order-detail-page"),
+    path("dashboard/cart-requests/", dashboard_cart_requests_view, name="dashboard-cart-requests-page"),
+    path("dashboard/customers/", dashboard_customers_view, name="dashboard-customers"),
+    # Dashboard AJAX / REST APIs
     path("dashboard/api/products/create/", api_product_create, name="dashboard-product-create"),
     path("dashboard/api/products/<str:handle_or_id>/", api_product_detail, name="dashboard-product-detail"),
     path("dashboard/api/categories/add/", api_add_category, name="dashboard-add-category"),

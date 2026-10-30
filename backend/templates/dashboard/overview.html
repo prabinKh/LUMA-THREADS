@@ -1,0 +1,166 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Dashboard Overview | Luma Threads Admin{% endblock %}
+{% block page_heading %}Overview Dashboard{% endblock %}
+{% block page_subheading %}Store performance, live orders, products, and customer activity{% endblock %}
+
+{% block content %}
+<section class="dashboard-page">
+
+  <!-- KPI Metrics Grid -->
+  <div class="metrics-row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+    <div class="metric-card">
+      <h3>Total Revenue</h3>
+      <div class="metric-val" style="color: #10b981;">${{ total_revenue }}</div>
+      <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Completed &amp; active sales</div>
+    </div>
+    <div class="metric-card">
+      <h3>Total Orders</h3>
+      <div class="metric-val">{{ total_orders_count }}</div>
+      <div style="font-size: 12px; color: #64748b; margin-top: 4px;"><a href="/dashboard/orders/" style="color: #2563eb; text-decoration: none;">View all orders →</a></div>
+    </div>
+    <div class="metric-card">
+      <h3>Active Products</h3>
+      <div class="metric-val">{{ total_products_count }}</div>
+      <div style="font-size: 12px; color: #64748b; margin-top: 4px;">{{ categories_count }} categories, {{ subcategories_count }} subcategories</div>
+    </div>
+    <div class="metric-card">
+      <h3>Customers</h3>
+      <div class="metric-val">{{ total_users_count }}</div>
+      <div style="font-size: 12px; color: #64748b; margin-top: 4px;"><a href="/dashboard/customers/" style="color: #2563eb; text-decoration: none;">Customer directory →</a></div>
+    </div>
+    <div class="metric-card">
+      <h3>Cart Requests</h3>
+      <div class="metric-val" style="color: #2563eb;">{{ active_carts_count }}</div>
+      <div style="font-size: 12px; color: #64748b; margin-top: 4px;"><a href="/dashboard/cart-requests/" style="color: #2563eb; text-decoration: none;">Active shopping bags →</a></div>
+    </div>
+  </div>
+
+  <!-- Order Status & Payment Breakdown Grid -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 25px;">
+    <!-- Order Fulfillment Status Card -->
+    <div class="table-card" style="padding: 20px;">
+      <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px;">Order Fulfillment Status</h3>
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+        <div style="background: #eff6ff; padding: 12px 16px; border-radius: 8px;">
+          <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #2563eb; display: block;">Processing</span>
+          <strong style="font-size: 22px; color: #1e40af;">{{ status_counts.processing }}</strong>
+        </div>
+        <div style="background: #fdf4ff; padding: 12px 16px; border-radius: 8px;">
+          <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #a21caf; display: block;">In Transit / Shipped</span>
+          <strong style="font-size: 22px; color: #86198f;">{{ status_counts.shipped }}</strong>
+        </div>
+        <div style="background: #ecfdf5; padding: 12px 16px; border-radius: 8px;">
+          <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #059669; display: block;">Delivered</span>
+          <strong style="font-size: 22px; color: #047857;">{{ status_counts.delivered }}</strong>
+        </div>
+        <div style="background: #fef2f2; padding: 12px 16px; border-radius: 8px;">
+          <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #dc2626; display: block;">Cancelled</span>
+          <strong style="font-size: 22px; color: #b91c1c;">{{ status_counts.cancelled }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Methods Breakdown Card -->
+    <div class="table-card" style="padding: 20px;">
+      <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px;">Payment Channels</h3>
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+        <div style="background: #ecfdf5; padding: 12px 16px; border-radius: 8px; border-left: 4px solid #10b981;">
+          <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #059669; display: block;">eSewa Wallet</span>
+          <strong style="font-size: 22px; color: #065f46;">{{ payment_counts.esewa }}</strong>
+        </div>
+        <div style="background: #eff6ff; padding: 12px 16px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+          <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #1d4ed8; display: block;">Bank Transfer</span>
+          <strong style="font-size: 22px; color: #1e3a8a;">{{ payment_counts.bank }}</strong>
+        </div>
+        <div style="background: #fefce8; padding: 12px 16px; border-radius: 8px; border-left: 4px solid #eab308;">
+          <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #a16207; display: block;">Cash on Delivery</span>
+          <strong style="font-size: 22px; color: #713f12;">{{ payment_counts.cod }}</strong>
+        </div>
+        <div style="background: #f1f5f9; padding: 12px 16px; border-radius: 8px; border-left: 4px solid #64748b;">
+          <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #334155; display: block;">Credit / Debit Card</span>
+          <strong style="font-size: 22px; color: #0f172a;">{{ payment_counts.card }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Orders Table -->
+  <div class="table-card">
+    <div class="table-toolbar">
+      <div>
+        <h2>Recent Customer Purchases</h2>
+        <p style="font-size: 13px; color: #64748b;">Latest live store orders requiring fulfillment or carrier tracking</p>
+      </div>
+      <a href="/dashboard/orders/" class="dash-btn dash-btn-outline">View All Orders ({{ total_orders_count }}) →</a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Order #</th>
+            <th>Customer</th>
+            <th>Items</th>
+            <th>Total Amount</th>
+            <th>Payment Channel</th>
+            <th>Fulfillment</th>
+            <th>Tracking</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in recent_orders %}
+          <tr>
+            <td>
+              <strong><a href="/dashboard/orders/{{ order.id }}/" style="color: #0f172a; text-decoration: none;">{{ order.order_number }}</a></strong>
+              <div style="font-size: 11.5px; color: #64748b;">{{ order.created_at|date:"M d, Y • h:i A" }}</div>
+            </td>
+            <td>
+              <div><strong>{{ order.customer_name }}</strong></div>
+              <div style="font-size: 11.5px; color: #64748b;">{{ order.customer_email }}</div>
+            </td>
+            <td>
+              <span class="badge" style="background: #f1f5f9; color: #334155;">{{ order.items.count }} item{{ order.items.count|pluralize }}</span>
+            </td>
+            <td>
+              <strong style="font-size: 14.5px; color: #0f172a;">${{ order.total_amount }}</strong>
+            </td>
+            <td>
+              {% if "esewa" in order.payment_method|lower %}
+                <span class="badge-payment badge-esewa">🟢 eSewa</span>
+              {% elif "bank" in order.payment_method|lower %}
+                <span class="badge-payment badge-bank">🏦 Bank</span>
+              {% elif "cash" in order.payment_method|lower or "cod" in order.payment_method|lower %}
+                <span class="badge-payment badge-cod">💵 COD</span>
+              {% else %}
+                <span class="badge-payment badge-card">💳 Card</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="status-pill status-{{ order.status }}">{{ order.status }}</span>
+            </td>
+            <td>
+              <div><strong>{{ order.carrier }}</strong></div>
+              {% if order.tracking_number %}
+                <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 11.5px;">{{ order.tracking_number }}</code>
+              {% else %}
+                <span style="color: #94a3b8; font-size: 11.5px;">Not assigned</span>
+              {% endif %}
+            </td>
+            <td style="text-align: right; white-space: nowrap;">
+              <a href="/dashboard/orders/{{ order.id }}/" class="btn-action btn-secondary">📄 View Invoice</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 30px; color: #64748b;">No recent orders recorded yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</section>
+{% endblock %}

@@ -1,0 +1,235 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Orders &amp; Live Tracking | Luma Threads Admin{% endblock %}
+{% block page_heading %}Orders &amp; Live Fulfillment Tracking{% endblock %}
+{% block page_subheading %}Track shipments, assign carriers (FedEx, DHL, Nepal Post, Aramex), update delivery timelines &amp; print invoices{% endblock %}
+
+{% block header_actions %}
+  <a href="/dashboard/cart-requests/" class="dash-btn dash-btn-outline">🛒 View Active Bags</a>
+{% endblock %}
+
+{% block content %}
+<section class="dashboard-page">
+
+  <div class="table-card">
+    <!-- Search & Filter Controls -->
+    <div class="table-toolbar">
+      <div class="search-box">
+        <input type="text" id="orderSearchInput" placeholder="Search orders by number (ORD-...), customer name, or email..." onkeyup="filterOrdersTable()">
+      </div>
+      <div class="filter-actions">
+        <select id="orderStatusFilter" onchange="filterOrdersTable()" class="dash-select">
+          <option value="">All Fulfillment Statuses</option>
+          <option value="processing">Processing</option>
+          <option value="shipped">In Transit / Shipped</option>
+          <option value="delivered">Delivered</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Orders Data Table -->
+    <div class="table-responsive">
+      <table class="data-table" id="ordersDataTable">
+        <thead>
+          <tr>
+            <th>Order #</th>
+            <th>Customer &amp; Location</th>
+            <th>Items</th>
+            <th>Total Amount</th>
+            <th>Payment Channel</th>
+            <th>Fulfillment</th>
+            <th>Carrier &amp; Tracking</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+          <tr class="order-row" 
+              data-order-num="{{ order.order_number|lower }}" 
+              data-customer="{{ order.customer_name|lower }} {{ order.customer_email|lower }}" 
+              data-status="{{ order.status|lower }}">
+            <td>
+              <strong><a href="/dashboard/orders/{{ order.id }}/" style="color: #0f172a; text-decoration: none;">{{ order.order_number }}</a></strong>
+              <div style="font-size: 11.5px; color: #64748b;">{{ order.created_at|date:"M d, Y • h:i A" }}</div>
+            </td>
+            <td>
+              <div><strong>{{ order.customer_name }}</strong></div>
+              <div style="font-size: 11.5px; color: #64748b;">{{ order.customer_email }}</div>
+            </td>
+            <td>
+              <span class="badge" style="background: #f1f5f9; color: #334155;">{{ order.items.count }} item{{ order.items.count|pluralize }}</span>
+            </td>
+            <td>
+              <strong style="font-size: 14.5px; color: #0f172a;">${{ order.total_amount }}</strong>
+            </td>
+            <td>
+              {% if "esewa" in order.payment_method|lower %}
+                <span class="badge-payment badge-esewa">🟢 eSewa</span>
+              {% elif "bank" in order.payment_method|lower %}
+                <span class="badge-payment badge-bank">🏦 Bank</span>
+              {% elif "cash" in order.payment_method|lower or "cod" in order.payment_method|lower %}
+                <span class="badge-payment badge-cod">💵 COD</span>
+              {% else %}
+                <span class="badge-payment badge-card">💳 Card</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="status-pill status-{{ order.status }}">{{ order.status }}</span>
+            </td>
+            <td>
+              <div><strong>{{ order.carrier|default:"Nepal Post" }}</strong></div>
+              {% if order.tracking_number %}
+                <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 11.5px;">{{ order.tracking_number }}</code>
+              {% else %}
+                <span style="color: #94a3b8; font-size: 11.5px;">No tracking assigned</span>
+              {% endif %}
+            </td>
+            <td style="text-align: right; white-space: nowrap;">
+              <button class="btn-action btn-edit" onclick="openTrackingModal({{ order.id }}, '{{ order.order_number }}', '{{ order.carrier }}', '{{ order.tracking_number|default:'' }}', '{{ order.status }}', '{{ order.estimated_delivery|default:'' }}')" title="Assign Carrier &amp; Tracking">🚚 Track</button>
+              <a href="/dashboard/orders/{{ order.id }}/" class="btn-action btn-secondary" title="View Printable Invoice">📄 Invoice</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">No customer orders placed yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</section>
+
+<!-- Quick Tracking Assignment Modal -->
+<div id="quickTrackingModal" class="modal-backdrop">
+  <div class="modal-window" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3 id="trackingModalTitle">Update Order Shipment</h3>
+      <button class="modal-close-btn" onclick="closeTrackingModal()">×</button>
+    </div>
+    <form id="trackingForm" onsubmit="saveTracking(event)">
+      <input type="hidden" id="trackOrderId">
+      <div style="padding: 20px;">
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label">Carrier Partner *</label>
+          <select id="trackCarrier" class="dash-select" style="width: 100%;" required>
+            <option value="Nepal Post">Nepal Post EMS</option>
+            <option value="DHL Express">DHL Express</option>
+            <option value="FedEx">FedEx International</option>
+            <option value="Aramex">Aramex Logistics</option>
+            <option value="Local Courier">Local Kathmandu Courier</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label">Tracking Number</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="trackNumber" class="form-input" placeholder="e.g. TRK-982148">
+            <button type="button" class="dash-btn dash-btn-outline" onclick="generateTrackingCode()">Auto</button>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label">Fulfillment Status</label>
+          <select id="trackStatus" class="dash-select" style="width: 100%;">
+            <option value="processing">Processing</option>
+            <option value="shipped">In Transit / Shipped</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Estimated Delivery Date</label>
+          <input type="date" id="trackEstDelivery" class="form-input">
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="dash-btn dash-btn-outline" onclick="closeTrackingModal()">Cancel</button>
+        <button type="submit" id="saveTrackingBtn" class="dash-btn dash-btn-accent">Save Shipment Info</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function filterOrdersTable() {
+    const searchVal = document.getElementById('orderSearchInput').value.toLowerCase();
+    const statusVal = document.getElementById('orderStatusFilter').value.toLowerCase();
+    const rows = document.querySelectorAll('#ordersDataTable tbody tr.order-row');
+
+    rows.forEach(row => {
+      const num = row.getAttribute('data-order-num') || '';
+      const customer = row.getAttribute('data-customer') || '';
+      const status = row.getAttribute('data-status') || '';
+
+      const matchesSearch = !searchVal || num.includes(searchVal) || customer.includes(searchVal);
+      const matchesStatus = !statusVal || status === statusVal;
+
+      row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+    });
+  }
+
+  function openTrackingModal(orderId, orderNum, carrier, trackingNum, status, estDelivery) {
+    document.getElementById('trackOrderId').value = orderId;
+    document.getElementById('trackingModalTitle').innerText = `Update Tracking: ${orderNum}`;
+    document.getElementById('trackCarrier').value = carrier || 'Nepal Post';
+    document.getElementById('trackNumber').value = trackingNum || '';
+    document.getElementById('trackStatus').value = status || 'processing';
+    document.getElementById('trackEstDelivery').value = estDelivery || '';
+    document.getElementById('quickTrackingModal').classList.add('active');
+  }
+
+  function closeTrackingModal() {
+    document.getElementById('quickTrackingModal').classList.remove('active');
+  }
+
+  function generateTrackingCode() {
+    const carrier = document.getElementById('trackCarrier').value;
+    const prefix = carrier.includes('DHL') ? 'DHL' : carrier.includes('FedEx') ? 'FDX' : carrier.includes('Nepal') ? 'NP' : 'TRK';
+    const rand = Math.floor(100000 + Math.random() * 900000);
+    document.getElementById('trackNumber').value = `${prefix}-${rand}`;
+  }
+
+  async function saveTracking(e) {
+    e.preventDefault();
+    const orderId = document.getElementById('trackOrderId').value;
+    const btn = document.getElementById('saveTrackingBtn');
+    btn.disabled = true;
+    btn.innerText = 'Updating...';
+
+    const payload = {
+      carrier: document.getElementById('trackCarrier').value,
+      tracking_number: document.getElementById('trackNumber').value.trim(),
+      status: document.getElementById('trackStatus').value,
+      estimated_delivery: document.getElementById('trackEstDelivery').value
+    };
+
+    try {
+      const res = await fetch(`/dashboard/api/orders/${orderId}/tracking/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('Shipment tracking updated!');
+        setTimeout(() => { window.location.reload(); }, 600);
+      } else {
+        showToast(data.error || 'Failed to update tracking', true);
+        btn.disabled = false;
+        btn.innerText = 'Save Shipment Info';
+      }
+    } catch {
+      showToast('Network error while saving tracking', true);
+      btn.disabled = false;
+      btn.innerText = 'Save Shipment Info';
+    }
+  }
+</script>
+{% endblock %}

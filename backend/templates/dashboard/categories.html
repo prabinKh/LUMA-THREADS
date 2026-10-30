@@ -1,0 +1,292 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Categories &amp; Subcategories | Luma Threads Admin{% endblock %}
+{% block page_heading %}Categories &amp; Subcategories{% endblock %}
+{% block page_subheading %}Manage store taxonomy, tree hierarchies, and nested subcategory mappings{% endblock %}
+
+{% block header_actions %}
+  <button class="dash-btn dash-btn-outline" onclick="openAddSubcategoryModal()">+ New Subcategory</button>
+  <button class="dash-btn dash-btn-accent" onclick="openAddCategoryModal()">+ New Category</button>
+{% endblock %}
+
+{% block content %}
+<section class="dashboard-page">
+
+  <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+
+    <!-- Left Column: Category Hierarchy Table -->
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+
+      <!-- Primary Categories Card -->
+      <div class="table-card">
+        <div class="table-toolbar">
+          <div>
+            <h2>Parent Categories</h2>
+            <p style="font-size: 13px; color: #64748b;">Top-level catalog collections displayed in main navigation</p>
+          </div>
+          <button class="dash-btn dash-btn-accent" onclick="openAddCategoryModal()">+ Add Category</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 40px;">#</th>
+                <th>Category Title</th>
+                <th>URL Slug</th>
+                <th>Subcategories</th>
+                <th>Products</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for cat in categories %}
+              <tr>
+                <td>{{ cat.order|default:forloop.counter }}</td>
+                <td>
+                  <strong>{{ cat.title }}</strong>
+                </td>
+                <td>
+                  <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 12px;">/collections/{{ cat.handle }}</code>
+                </td>
+                <td>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                    {% for sub in cat.subcategories.all %}
+                      <span class="badge" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; font-size: 11px;">{{ sub.title }}</span>
+                    {% empty %}
+                      <span style="color: #94a3b8; font-size: 12px;">No subcategories</span>
+                    {% endfor %}
+                  </div>
+                </td>
+                <td>
+                  <strong>{{ cat.products.count }} products</strong>
+                </td>
+                <td style="text-align: right;">
+                  <button class="btn-action btn-delete" onclick="deleteCategory({{ cat.id }}, '{{ cat.title|escapejs }}')" title="Delete Category">🗑️ Delete</button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" style="text-align: center; padding: 40px; color: #64748b;">No categories created yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Nested Subcategories Card -->
+      <div class="table-card">
+        <div class="table-toolbar">
+          <div>
+            <h2>Subcategories &amp; Styles</h2>
+            <p style="font-size: 13px; color: #64748b;">Nested styles linked to their mandatory parent category</p>
+          </div>
+          <button class="dash-btn dash-btn-outline" onclick="openAddSubcategoryModal()">+ Add Subcategory</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 40px;">#</th>
+                <th>Subcategory Title</th>
+                <th>Parent Category</th>
+                <th>URL Slug</th>
+                <th>Products</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for sub in subcategories %}
+              <tr>
+                <td>{{ sub.order|default:forloop.counter }}</td>
+                <td>
+                  <strong>{{ sub.title }}</strong>
+                </td>
+                <td>
+                  <span class="badge badge-category">{{ sub.category.title }}</span>
+                </td>
+                <td>
+                  <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 12px;">{{ sub.handle }}</code>
+                </td>
+                <td>
+                  <strong>{{ sub.products.count }} products</strong>
+                </td>
+                <td style="text-align: right;">
+                  <button class="btn-action btn-delete" onclick="deleteSubcategory({{ sub.id }}, '{{ sub.title|escapejs }}')" title="Delete Subcategory">🗑️ Delete</button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" style="text-align: center; padding: 40px; color: #64748b;">No subcategories created yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Quick Add Forms -->
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+
+      <!-- Quick Add Category Card -->
+      <div class="table-card" style="padding: 24px;">
+        <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 14px; color: #0f172a;">+ Create Category</h3>
+        <p style="font-size: 12.5px; color: #64748b; margin-bottom: 16px;">Add a new top-level department or collection</p>
+
+        <form id="quickAddCategoryForm" onsubmit="handleCategorySubmit(event)">
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label">Category Name *</label>
+            <input type="text" id="quickCatTitle" class="form-input" placeholder="e.g. Denim Jackets" required onkeyup="document.getElementById('quickCatHandle').value = this.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label">Handle / Slug</label>
+            <input type="text" id="quickCatHandle" class="form-input" placeholder="denim-jackets">
+          </div>
+
+          <button type="submit" class="dash-btn dash-btn-accent" style="width: 100%; padding: 10px;">
+            Save Category
+          </button>
+        </form>
+      </div>
+
+      <!-- Quick Add Subcategory Card with MANDATORY parent category -->
+      <div class="table-card" style="padding: 24px;">
+        <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 14px; color: #0f172a;">+ Create Subcategory</h3>
+        <p style="font-size: 12.5px; color: #64748b; margin-bottom: 16px;">Mandatory: select a parent category first</p>
+
+        <form id="quickAddSubcategoryForm" onsubmit="handleSubcategorySubmit(event)">
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label">Parent Category *</label>
+            <select id="quickSubParentCat" class="dash-select" style="width: 100%;" required>
+              <option value="">-- Select Parent Category --</option>
+              {% for cat in categories %}
+                <option value="{{ cat.id }}">{{ cat.title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label">Subcategory Name *</label>
+            <input type="text" id="quickSubTitle" class="form-input" placeholder="e.g. High Rise Barrel" required onkeyup="document.getElementById('quickSubHandle').value = this.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label">Handle / Slug</label>
+            <input type="text" id="quickSubHandle" class="form-input" placeholder="high-rise-barrel">
+          </div>
+
+          <button type="submit" class="dash-btn dash-btn-outline" style="width: 100%; padding: 10px;">
+            Save Subcategory
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function openAddCategoryModal() {
+    document.getElementById('quickCatTitle').focus();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function openAddSubcategoryModal() {
+    document.getElementById('quickSubParentCat').focus();
+    window.scrollTo({ top: 300, behavior: 'smooth' });
+  }
+
+  async function handleCategorySubmit(e) {
+    e.preventDefault();
+    const title = document.getElementById('quickCatTitle').value.trim();
+    const handle = document.getElementById('quickCatHandle').value.trim();
+
+    try {
+      const res = await fetch('/dashboard/api/categories/add/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'category', title, handle })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('Category created successfully!');
+        setTimeout(() => { window.location.reload(); }, 600);
+      } else {
+        showToast(data.error || 'Failed to create category', true);
+      }
+    } catch {
+      showToast('Network error while creating category', true);
+    }
+  }
+
+  async function handleSubcategorySubmit(e) {
+    e.preventDefault();
+    const parentId = document.getElementById('quickSubParentCat').value;
+    const title = document.getElementById('quickSubTitle').value.trim();
+    const handle = document.getElementById('quickSubHandle').value.trim();
+
+    if (!parentId) {
+      showToast('Please select a parent category first', true);
+      return;
+    }
+
+    try {
+      const res = await fetch('/dashboard/api/categories/add/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'subcategory', parent_id: parentId, title, handle })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('Subcategory created successfully!');
+        setTimeout(() => { window.location.reload(); }, 600);
+      } else {
+        showToast(data.error || 'Failed to create subcategory', true);
+      }
+    } catch {
+      showToast('Network error while creating subcategory', true);
+    }
+  }
+
+  async function deleteCategory(id, name) {
+    if (!confirm(`Are you sure you want to delete category "${name}"?`)) return;
+    try {
+      const res = await fetch(`/dashboard/api/categories/${id}/delete/`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('Category deleted');
+        setTimeout(() => { window.location.reload(); }, 600);
+      } else {
+        showToast(data.error || 'Could not delete category', true);
+      }
+    } catch {
+      showToast('Error communicating with server', true);
+    }
+  }
+
+  async function deleteSubcategory(id, name) {
+    if (!confirm(`Are you sure you want to delete subcategory "${name}"?`)) return;
+    try {
+      const res = await fetch(`/dashboard/api/subcategories/${id}/delete/`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('Subcategory deleted');
+        setTimeout(() => { window.location.reload(); }, 600);
+      } else {
+        showToast(data.error || 'Could not delete subcategory', true);
+      }
+    } catch {
+      showToast('Error communicating with server', true);
+    }
+  }
+</script>
+{% endblock %}

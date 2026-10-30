@@ -1,0 +1,281 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Edit {{ product.title }} | Luma Threads Admin{% endblock %}
+{% block page_heading %}Edit Product: {{ product.title }}{% endblock %}
+{% block page_subheading %}Update multi-variant dress colors, custom hex swatches, variant pricing, sizes, and descriptions{% endblock %}
+
+{% block header_actions %}
+  <a href="/dashboard/products/" class="dash-btn dash-btn-outline">← Back to Products</a>
+{% endblock %}
+
+{% block content %}
+<section class="dashboard-page">
+
+  <form id="editProductForm" onsubmit="handleEditSubmit(event)">
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+
+      <!-- Left Column: Core Details & Multi-Color Swatch Builder -->
+      <div style="display: flex; flex-direction: column; gap: 24px;">
+
+        <!-- Product Basic Info Card -->
+        <div class="table-card" style="padding: 24px;">
+          <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 18px; color: #0f172a;">Basic Product Details</h3>
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label">Product Title *</label>
+            <input type="text" id="prodTitle" class="form-input" value="{{ product.title }}" required>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+            <div class="form-group">
+              <label class="form-label">URL Slug / Handle</label>
+              <input type="text" id="prodHandle" class="form-input" value="{{ product.handle }}" readonly style="background: #f1f5f9; cursor: not-allowed;">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Base Retail Price ($) *</label>
+              <input type="number" id="prodPrice" step="0.01" class="form-input" value="{{ product.price }}" required>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label">Description</label>
+            <textarea id="prodDesc" class="form-input" rows="4">{{ product.description }}</textarea>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+            <div class="form-group">
+              <label class="form-label">Badge</label>
+              <input type="text" id="prodBadge" class="form-input" value="{{ product.badge|default:'' }}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Fit</label>
+              <input type="text" id="prodFit" class="form-input" value="{{ product.fit|default:'' }}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Rise / Cut</label>
+              <input type="text" id="prodRise" class="form-input" value="{{ product.rise|default:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- Colorways & Swatches Builder Card -->
+        <div class="table-card" style="padding: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <div>
+              <h3 style="font-size: 16px; font-weight: 700; color: #0f172a;">Colorways, Hex Swatches &amp; Variant Pricing</h3>
+              <p style="font-size: 13px; color: #64748b; margin-top: 2px;">
+                Each color has its own visual hex swatch, distinct price, specific sizes, and main image.
+              </p>
+            </div>
+            <button type="button" class="dash-btn dash-btn-outline" onclick="addColorRow()">+ Add Colorway</button>
+          </div>
+
+          <!-- Color Rows Container -->
+          <div id="colorRowsContainer" style="display: flex; flex-direction: column; gap: 14px;">
+            <!-- Rows dynamically populated via JavaScript with existing product variants -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Taxonomy, Fallback Images & Action -->
+      <div style="display: flex; flex-direction: column; gap: 24px;">
+
+        <!-- Categorization Card -->
+        <div class="table-card" style="padding: 24px;">
+          <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 18px; color: #0f172a;">Category &amp; Taxonomy</h3>
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label">Primary Category *</label>
+            <select id="prodCategory" class="dash-select" style="width: 100%;" onchange="filterSubcategories()">
+              <option value="">-- Select Category --</option>
+              {% for cat in categories %}
+                <option value="{{ cat.id }}" {% if product.category_id == cat.id %}selected{% endif %}>{{ cat.title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label">Subcategory (Optional)</label>
+            <select id="prodSubCategory" class="dash-select" style="width: 100%;">
+              <option value="">-- None / Select Subcategory --</option>
+              {% for sub in subcategories %}
+                <option value="{{ sub.id }}" data-parent-cat="{{ sub.category_id }}" {% if product.subcategory_id == sub.id %}selected{% endif %}>
+                  {{ sub.title }} ({{ sub.category.title }})
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Default Available Sizes</label>
+            <input type="text" id="prodDefaultSizes" class="form-input" value="{{ product.sizes|join:', ' }}">
+            <span style="font-size: 11px; color: #64748b; margin-top: 4px; display: block;">Comma-separated fallback size run.</span>
+          </div>
+        </div>
+
+        <!-- Default Cover Image Card -->
+        <div class="table-card" style="padding: 24px;">
+          <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 18px; color: #0f172a;">Default Product Image</h3>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label">Primary Cover Image URL</label>
+            <input type="url" id="prodImage" class="form-input" value="{{ product.image }}">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Hover Image URL (Optional)</label>
+            <input type="url" id="prodHoverImage" class="form-input" value="{{ product.hover_image|default:'' }}">
+          </div>
+        </div>
+
+        <!-- Save Action Buttons -->
+        <div class="table-card" style="padding: 20px;">
+          <button type="submit" id="saveProdBtn" class="dash-btn dash-btn-accent" style="width: 100%; padding: 12px; font-size: 15px; font-weight: 700;">
+            💾 Save Product Changes
+          </button>
+          <a href="/dashboard/products/" class="dash-btn dash-btn-outline" style="width: 100%; padding: 10px; margin-top: 10px; text-align: center; display: block; text-decoration: none;">
+            Cancel
+          </a>
+        </div>
+
+      </div>
+
+    </div>
+  </form>
+
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const existingColors = [
+    {% for c in product.color_variants.all %}
+    {
+      name: "{{ c.color_name|escapejs }}",
+      hex: "{{ c.color_hex|default:'#222222' }}",
+      price: "{{ c.price|default:product.price }}",
+      sizes: "{{ c.sizes|join:', ' }}",
+      image: "{{ c.primary_image|escapejs }}"
+    },
+    {% endfor %}
+  ];
+
+  function filterSubcategories() {
+    const catId = document.getElementById('prodCategory').value;
+    const subSelect = document.getElementById('prodSubCategory');
+    Array.from(subSelect.options).forEach((opt, idx) => {
+      if (idx === 0) return;
+      const parentId = opt.getAttribute('data-parent-cat');
+      opt.style.display = (!catId || parentId === catId) ? 'block' : 'none';
+    });
+  }
+
+  function addColorRow(data = {}) {
+    const container = document.getElementById('colorRowsContainer');
+    const card = document.createElement('div');
+    card.className = 'color-row-card';
+    card.style.cssText = 'background:#f8fafc; border:1px solid #e2e8f0; padding:16px; border-radius:10px; position:relative;';
+
+    const colorName = data.name || '';
+    const colorHex = data.hex || '#222222';
+    const colorPrice = data.price || document.getElementById('prodPrice').value || '168.00';
+    const colorSizes = data.sizes || '24, 25, 26, 27, 28, 29, 30';
+    const primaryImg = data.image || '';
+
+    card.innerHTML = `
+      <div style="display: grid; grid-template-columns: 160px 80px 120px 1fr 34px; gap: 12px; align-items: center; margin-bottom: 10px;">
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">Color Name</label>
+          <input type="text" class="form-input c-name" placeholder="e.g. Raw Ecru" value="${colorName}" required>
+        </div>
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">Hex Swatch</label>
+          <input type="color" class="c-hex" value="${colorHex}" style="width: 100%; height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; padding: 2px;">
+        </div>
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">Price ($)</label>
+          <input type="number" step="0.01" class="form-input c-price" placeholder="198.00" value="${colorPrice}">
+        </div>
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">Available Sizes</label>
+          <input type="text" class="form-input c-sizes" placeholder="XS, S, M, L" value="${colorSizes}">
+        </div>
+        <button type="button" class="btn-remove-color" onclick="this.closest('.color-row-card').remove()" style="margin-top: 18px; color: #ef4444; border: 1px solid #fecaca; background: #fff; width: 34px; height: 36px; border-radius: 6px; cursor: pointer; font-size: 18px; font-weight: bold;" title="Remove this colorway">×</button>
+      </div>
+      <div>
+        <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">Color Specific Main Image URL</label>
+        <input type="url" class="form-input c-img" placeholder="https://images.unsplash.com/..." value="${primaryImg}">
+      </div>
+    `;
+    container.appendChild(card);
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    filterSubcategories();
+    if (existingColors.length > 0) {
+      existingColors.forEach(c => addColorRow(c));
+    } else {
+      addColorRow({ name: 'Default Color', hex: '#222222', price: '{{ product.price }}', sizes: 'XS, S, M, L', image: '{{ product.image }}' });
+    }
+  });
+
+  async function handleEditSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('saveProdBtn');
+    btn.disabled = true;
+    btn.innerText = 'Saving Changes...';
+
+    const colorRows = document.querySelectorAll('#colorRowsContainer .color-row-card');
+    const color_variants = [];
+    colorRows.forEach(row => {
+      const name = row.querySelector('.c-name').value.trim();
+      const hex = row.querySelector('.c-hex').value;
+      const price = row.querySelector('.c-price').value;
+      const sizes = row.querySelector('.c-sizes').value;
+      const img = row.querySelector('.c-img').value;
+      if (name) {
+        color_variants.push({ color_name: name, color_hex: hex, price, sizes, primary_image: img });
+      }
+    });
+
+    const payload = {
+      title: document.getElementById('prodTitle').value.trim(),
+      price: document.getElementById('prodPrice').value,
+      category_id: document.getElementById('prodCategory').value,
+      subcategory_id: document.getElementById('prodSubCategory').value || null,
+      description: document.getElementById('prodDesc').value,
+      badge: document.getElementById('prodBadge').value,
+      fit: document.getElementById('prodFit').value,
+      rise: document.getElementById('prodRise').value,
+      sizes: document.getElementById('prodDefaultSizes').value,
+      image: document.getElementById('prodImage').value || (color_variants[0] && color_variants[0].primary_image) || '',
+      hover_image: document.getElementById('prodHoverImage').value || '',
+      color_variants: color_variants
+    };
+
+    try {
+      const res = await fetch('/dashboard/api/products/{{ product.handle }}/', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('Product updated successfully!');
+        setTimeout(() => {
+          window.location.href = '/dashboard/products/';
+        }, 800);
+      } else {
+        showToast(data.error || 'Failed to update product', true);
+        btn.disabled = false;
+        btn.innerText = '💾 Save Product Changes';
+      }
+    } catch (err) {
+      showToast('Network error while updating product', true);
+      btn.disabled = false;
+      btn.innerText = '💾 Save Product Changes';
+    }
+  }
+</script>
+{% endblock %}
