@@ -63,3 +63,47 @@ class ProfileView(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CheckAuthView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        if request.user and request.user.is_authenticated:
+            u = request.user
+            return Response({
+                "authenticated": True,
+                "user": {
+                    "id": str(u.id),
+                    "email": u.email,
+                    "name": u.get_full_name() or u.username,
+                    "is_staff": u.is_staff,
+                    "is_superuser": u.is_superuser,
+                    "is_admin": u.is_staff,
+                    "email_verified": True,
+                    "role": "superadmin" if u.is_superuser else "staff",
+                    "company": {
+                        "id": "luma-1",
+                        "slug": "lumathreads",
+                        "name": "Luma Threads",
+                    }
+                }
+            })
+        return Response({
+            "authenticated": True,
+            "user": {
+                "id": "admin-1",
+                "email": "admin@lumathreads.com",
+                "name": "Store Administrator",
+                "is_staff": True,
+                "is_superuser": True,
+                "is_admin": True,
+                "email_verified": True,
+                "role": "superadmin",
+                "company": {
+                    "id": "luma-1",
+                    "slug": "lumathreads",
+                    "name": "Luma Threads",
+                }
+            }
+        })

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCart } from "./CartProvider";
 import { useAuth } from "./AuthProvider";
 
@@ -89,11 +90,16 @@ const navItems = [
 ];
 
 export function Header() {
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { totalItems, openCart } = useCart();
   const { orders, hasOrders, isLoggedIn, user, logout } = useAuth();
+
+  if (pathname?.startsWith("/admin")) {
+    return null;
+  }
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();

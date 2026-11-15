@@ -1,18 +1,48 @@
 import axiosInstance from "./axiosConfig";
 import { type Order } from "@/types/order";
 
+function normalizeOrder(raw: any): Order {
+  if (!raw) return raw;
+  return {
+    ...raw,
+    id: String(raw.id || raw.order_number || ""),
+    orderId: raw.order_number || raw.orderId || String(raw.id || ""),
+    customerName: raw.customer_name || raw.customerName || "Customer",
+    customerEmail: raw.customer_email || raw.customerEmail || "",
+    totalAmount: Number(raw.total_amount ?? raw.totalAmount ?? 0),
+    status: (raw.status || "pending").toLowerCase() as Order["status"],
+    shippingAddress: typeof raw.shipping_address === "object" && raw.shipping_address !== null
+      ? raw.shipping_address
+      : {
+          address: String(raw.shipping_address || ""),
+          city: "",
+          phone: raw.customer_phone || "",
+        },
+    createdAt: raw.created_at || raw.createdAt || new Date().toISOString(),
+    paymentMethod: raw.payment_method || raw.paymentMethod || "COD",
+    paymentStatus: raw.payment_status || raw.paymentStatus || "unpaid",
+    items: Array.isArray(raw.items)
+      ? raw.items.map((it: any) => ({
+          productId: String(it.productId || it.product_handle || it.id || ""),
+          name: it.name || it.product_name || "Item",
+          price: Number(it.price || 0),
+          quantity: Number(it.quantity || 1),
+          image: it.image || it.image_url || "",
+          features: it.features || [it.color, it.size].filter(Boolean),
+        }))
+      : [],
+  };
+}
+
 export const orderService = {
   async getAll(options?: { status?: string; exclude_status?: string; payment_status?: string }) {
     try {
       const response = await axiosInstance.get("/admin/orders/", {
         params: options
       });
-      // Handle potential pagination from DRF
       const data = response.data;
-      if (data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
-        return data.results as Order[];
-      }
-      return (Array.isArray(data) ? data : []) as Order[];
+      const rawList = Array.isArray(data) ? data : (data && typeof data === 'object' && Array.isArray((data as any).results) ? (data as any).results : []);
+      return rawList.map(normalizeOrder);
     } catch (error) {
       console.error("Error fetching orders:", error);
       return [];
@@ -22,7 +52,7 @@ export const orderService = {
   async getById(id: string | number) {
     try {
       const response = await axiosInstance.get(`/admin/orders/${id}/`);
-      return response.data as Order;
+      return normalizeOrder(response.data);
     } catch (error) {
       console.error(`Error fetching order ${id}:`, error);
       return null;

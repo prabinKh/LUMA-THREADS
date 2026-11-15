@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, re_path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.response import Response
@@ -27,7 +27,11 @@ from products.dashboard_views import (
     api_cart_requests,
     api_cart_update_status,
     api_user_create,
+    api_customers_list,
+    api_category_features,
 )
+from orders.views import OrderListCreateView
+from products.views import CategoryListView, SubCategoryListView
 
 
 @api_view(["GET"])
@@ -77,6 +81,16 @@ urlpatterns = [
     path("api/cart-requests/", api_cart_requests, name="api-cart-requests"),
     path("dashboard/api/cart-requests/<int:cart_id>/status/", api_cart_update_status, name="dashboard-cart-status"),
     path("dashboard/api/users/add/", api_user_create, name="dashboard-user-create"),
+    # Admin REST APIs for frontend admin (supports with and without trailing slash)
+    re_path(r"^api/admin/products/?$", api_product_create, name="api-admin-product-create"),
+    re_path(r"^api/admin/products/(?P<handle_or_id>[^/]+)/?$", api_product_detail, name="api-admin-product-detail"),
+    re_path(r"^api/admin/orders/?$", OrderListCreateView.as_view(), name="api-admin-orders-list"),
+    re_path(r"^api/admin/orders/(?P<order_id>\d+)/?$", api_order_detail, name="api-admin-order-detail"),
+    re_path(r"^api/admin/categories/?$", CategoryListView.as_view(), name="api-admin-categories-list"),
+    re_path(r"^api/admin/categories/add/?$", api_add_category, name="api-admin-add-category"),
+    re_path(r"^api/admin/subcategories/?$", SubCategoryListView.as_view(), name="api-admin-subcategories-list"),
+    re_path(r"^api/admin/category-features/?$", api_category_features, name="api-admin-category-features"),
+    re_path(r"^api/admin/customers/?$", api_customers_list, name="api-admin-customers"),
     # General API
     path("api/", api_root, name="api-root"),
     # Accounts

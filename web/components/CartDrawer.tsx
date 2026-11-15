@@ -2,16 +2,21 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useCart } from "./CartProvider";
 import { useAuth } from "./AuthProvider";
 import { formatPrice } from "@/lib/catalog";
 
 export function CartDrawer() {
   const router = useRouter();
+  const pathname = usePathname();
   const { isLoggedIn } = useAuth();
   const { items, isOpen, closeCart, updateQuantity, removeItem, subtotal } =
     useCart();
+
+  if (pathname?.startsWith("/admin")) {
+    return null;
+  }
 
   const freeShippingThreshold = 150;
   const progressPercent = Math.min(
