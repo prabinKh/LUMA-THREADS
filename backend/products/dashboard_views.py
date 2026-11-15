@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, Q, Max
 from .models import Product, Category, SubCategory, Collection, ProductColor, ProductVariant
 from orders.models import Order, OrderItem, CartRequest
 from accounts.models import User
@@ -116,9 +116,11 @@ def dashboard_categories_view(request):
     """Individual Page 5: Categories & Subcategories Hierarchy."""
     categories = Category.objects.all().prefetch_related("subcategories", "products").order_by("order", "title")
     subcategories = SubCategory.objects.all().select_related("category").prefetch_related("products").order_by("order", "title")
+    max_cat_order = Category.objects.all().aggregate(Max("order"))["order__max"] or 0
     context = {
         "categories": categories,
         "subcategories": subcategories,
+        "next_cat_order": max_cat_order + 1,
         "active_tab": "categories",
     }
     return render(request, "dashboard/categories.html", context)
@@ -437,54 +439,107 @@ def api_product_detail(request, handle_or_id):
 
 @csrf_exempt
 def api_add_category(request):
-    """Endpoint to quickly add a new Category or SubCategory."""
+    """Endpoint to quickly add a new Category or SubCategory with sequence / display order."""
     if request.method != "POST":
         return JsonResponse({"error": "POST required"}, status=405)
 
     data = json.loads(request.body.decode("utf-8"))
     title = data.get("title", "").strip()
-    handle = data.get("handle", "").strip() or title.lower().replace(" ", "-")
-    parent_category_id = data.get("category_id")
+    handle = data.get("handle", "").strip() or title.lower().replace(" ", "-").replace("/", "-")
+    parent_category_id = data.get("category_id") or data.get("parent_id")
+    order_val = data.get("order")
 
     if not title:
         return JsonResponse({"error": "Title is required"}, status=400)
 
     if parent_category_id:
         parent_cat = get_object_or_404(Category, id=parent_category_id)
+        if order_val is not None and str(order_val).strip() != "":
+            try:
+                order = int(order_val)
+            except ValueError:
+                order = 0
+        else:
+            max_order = SubCategory.objects.filter(category=parent_cat).aggregate(Max("order"))["order__max"] or 0
+            order = max_order + 1
+
         subcat, created = SubCategory.objects.get_or_create(
             category=parent_cat,
             handle=handle,
-            defaults={"title": title}
+            defaults={"title": title, "order": order}
         )
+        if not created and order_val is not None:
+            subcat.order = order
+            subcat.title = title
+            subcat.save()
+
         return JsonResponse({
             "success": True,
             "type": "subcategory",
             "id": subcat.id,
             "title": subcat.title,
             "handle": subcat.handle,
+            "order": subcat.order,
             "category_id": parent_cat.id,
             "created": created
         })
     else:
+        if order_val is not None and str(order_val).strip() != "":
+            try:
+                order = int(order_val)
+            except ValueError:
+                order = 0
+        else:
+            max_order = Category.objects.all().aggregate(Max("order"))["order__max"] or 0
+            order = max_order + 1
+
         cat, created = Category.objects.get_or_create(
             handle=handle,
-            defaults={"title": title}
+            defaults={"title": title, "order": order}
         )
+        if not created and order_val is not None:
+            cat.order = order
+            cat.title = title
+            cat.save()
+
         return JsonResponse({
             "success": True,
             "type": "category",
             "id": cat.id,
             "title": cat.title,
             "handle": cat.handle,
+            "order": cat.order,
             "created": created
         })
 
 
 @csrf_exempt
+def api_update_category_order(request):
+    """Endpoint to update sequence / order for Category or SubCategory."""
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    data = json.loads(request.body.decode("utf-8"))
+    item_type = data.get("type", "category")
+    item_id = data.get("id")
+    order = int(data.get("order", 0))
+
+    if item_type == "subcategory":
+        sub = get_object_or_404(SubCategory, id=item_id)
+        sub.order = order
+        sub.save()
+        return JsonResponse({"success": True, "message": f"Sequence updated for '{sub.title}' to {order}"})
+    else:
+        cat = get_object_or_404(Category, id=item_id)
+        cat.order = order
+        cat.save()
+        return JsonResponse({"success": True, "message": f"Sequence updated for '{cat.title}' to {order}"})
+
+
+@csrf_exempt
 def api_delete_category(request, category_id):
     """Delete a Category."""
-    if request.method != "DELETE":
-        return JsonResponse({"error": "DELETE required"}, status=405)
+    if request.method not in ["DELETE", "POST"]:
+        return JsonResponse({"error": "DELETE or POST required"}, status=405)
     cat = get_object_or_404(Category, id=category_id)
     title = cat.title
     cat.delete()
@@ -494,8 +549,8 @@ def api_delete_category(request, category_id):
 @csrf_exempt
 def api_delete_subcategory(request, subcategory_id):
     """Delete a SubCategory."""
-    if request.method != "DELETE":
-        return JsonResponse({"error": "DELETE required"}, status=405)
+    if request.method not in ["DELETE", "POST"]:
+        return JsonResponse({"error": "DELETE or POST required"}, status=405)
     sub = get_object_or_404(SubCategory, id=subcategory_id)
     title = sub.title
     sub.delete()

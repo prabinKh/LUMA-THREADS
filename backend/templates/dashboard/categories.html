@@ -31,7 +31,7 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th style="width: 40px;">#</th>
+                <th style="width: 70px;">Sequence</th>
                 <th>Category Title</th>
                 <th>URL Slug</th>
                 <th>Subcategories</th>
@@ -42,7 +42,14 @@
             <tbody>
               {% for cat in categories %}
               <tr>
-                <td>{{ cat.order|default:forloop.counter }}</td>
+                <td>
+                  <input type="number" 
+                         value="{{ cat.order|default:forloop.counter }}" 
+                         min="0" 
+                         style="width: 55px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center; font-weight: 700; font-size: 13px;"
+                         onchange="updateCategoryOrder('category', {{ cat.id }}, this.value)"
+                         title="Change display sequence order">
+                </td>
                 <td>
                   <strong>{{ cat.title }}</strong>
                 </td>
@@ -52,7 +59,7 @@
                 <td>
                   <div style="display: flex; gap: 4px; flex-wrap: wrap;">
                     {% for sub in cat.subcategories.all %}
-                      <span class="badge" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; font-size: 11px;">{{ sub.title }}</span>
+                      <span class="badge" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; font-size: 11px;">{{ sub.title }} <small style="opacity: 0.7;">(#{{ sub.order }})</small></span>
                     {% empty %}
                       <span style="color: #94a3b8; font-size: 12px;">No subcategories</span>
                     {% endfor %}
@@ -89,7 +96,7 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th style="width: 40px;">#</th>
+                <th style="width: 70px;">Sequence</th>
                 <th>Subcategory Title</th>
                 <th>Parent Category</th>
                 <th>URL Slug</th>
@@ -100,7 +107,14 @@
             <tbody>
               {% for sub in subcategories %}
               <tr>
-                <td>{{ sub.order|default:forloop.counter }}</td>
+                <td>
+                  <input type="number" 
+                         value="{{ sub.order|default:forloop.counter }}" 
+                         min="0" 
+                         style="width: 55px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center; font-weight: 700; font-size: 13px;"
+                         onchange="updateCategoryOrder('subcategory', {{ sub.id }}, this.value)"
+                         title="Change display sequence order">
+                </td>
                 <td>
                   <strong>{{ sub.title }}</strong>
                 </td>
@@ -148,6 +162,12 @@
             <input type="text" id="quickCatHandle" class="form-input" placeholder="denim-jackets">
           </div>
 
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label">Sequence (Display Order)</label>
+            <input type="number" id="quickCatOrder" class="form-input" value="{{ next_cat_order }}" min="0" placeholder="1">
+            <span style="font-size: 11px; color: #64748b;">Lower numbers appear first in menus and catalog</span>
+          </div>
+
           <button type="submit" class="dash-btn dash-btn-accent" style="width: 100%; padding: 10px;">
             Save Category
           </button>
@@ -180,6 +200,12 @@
             <input type="text" id="quickSubHandle" class="form-input" placeholder="high-rise-barrel">
           </div>
 
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label">Sequence (Display Order)</label>
+            <input type="number" id="quickSubOrder" class="form-input" value="1" min="0" placeholder="1">
+            <span style="font-size: 11px; color: #64748b;">Order within parent category</span>
+          </div>
+
           <button type="submit" class="dash-btn dash-btn-outline" style="width: 100%; padding: 10px;">
             Save Subcategory
           </button>
@@ -209,16 +235,17 @@
     e.preventDefault();
     const title = document.getElementById('quickCatTitle').value.trim();
     const handle = document.getElementById('quickCatHandle').value.trim();
+    const order = document.getElementById('quickCatOrder').value.trim();
 
     try {
       const res = await fetch('/dashboard/api/categories/add/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'category', title, handle })
+        body: JSON.stringify({ type: 'category', title, handle, order })
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        showToast('Category created successfully!');
+        showToast(`Category created successfully with sequence ${data.order}!`);
         setTimeout(() => { window.location.reload(); }, 600);
       } else {
         showToast(data.error || 'Failed to create category', true);
@@ -233,6 +260,7 @@
     const parentId = document.getElementById('quickSubParentCat').value;
     const title = document.getElementById('quickSubTitle').value.trim();
     const handle = document.getElementById('quickSubHandle').value.trim();
+    const order = document.getElementById('quickSubOrder').value.trim();
 
     if (!parentId) {
       showToast('Please select a parent category first', true);
@@ -243,17 +271,41 @@
       const res = await fetch('/dashboard/api/categories/add/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'subcategory', parent_id: parentId, title, handle })
+        body: JSON.stringify({ type: 'subcategory', parent_id: parentId, title, handle, order })
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        showToast('Subcategory created successfully!');
+        showToast(`Subcategory created successfully with sequence ${data.order}!`);
         setTimeout(() => { window.location.reload(); }, 600);
       } else {
         showToast(data.error || 'Failed to create subcategory', true);
       }
     } catch {
       showToast('Network error while creating subcategory', true);
+    }
+  }
+
+  async function updateCategoryOrder(type, id, newOrder) {
+    const parsedOrder = parseInt(newOrder, 10);
+    if (isNaN(parsedOrder) || parsedOrder < 0) {
+      showToast('Please enter a valid sequence number (>= 0)', true);
+      return;
+    }
+
+    try {
+      const res = await fetch('/dashboard/api/categories/reorder/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, id, order: parsedOrder })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(data.message || 'Sequence updated successfully!');
+      } else {
+        showToast(data.error || 'Failed to update sequence', true);
+      }
+    } catch {
+      showToast('Error saving sequence change', true);
     }
   }
 

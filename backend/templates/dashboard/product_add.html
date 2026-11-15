@@ -176,9 +176,15 @@
           <label class="form-label">Category Title *</label>
           <input type="text" id="quickCatTitleInput" class="form-input" placeholder="e.g. Knitwear & Sweaters" required onkeyup="document.getElementById('quickCatSlugInput').value = this.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')">
         </div>
-        <div class="form-group">
-          <label class="form-label">URL Slug / Handle</label>
-          <input type="text" id="quickCatSlugInput" class="form-input" placeholder="knitwear-sweaters">
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">URL Slug / Handle</label>
+            <input type="text" id="quickCatSlugInput" class="form-input" placeholder="knitwear-sweaters">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sequence (Order)</label>
+            <input type="number" id="quickCatOrderInput" class="form-input" placeholder="1" min="1" value="1" title="Display position order (1, 2, 3...)">
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -206,9 +212,15 @@
           <label class="form-label">Subcategory Name *</label>
           <input type="text" id="quickSubTitleInput" class="form-input" placeholder="e.g. Cardigans, Barrel Leg" required onkeyup="document.getElementById('quickSubSlugInput').value = this.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')">
         </div>
-        <div class="form-group">
-          <label class="form-label">URL Slug / Handle</label>
-          <input type="text" id="quickSubSlugInput" class="form-input" placeholder="cardigans">
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">URL Slug / Handle</label>
+            <input type="text" id="quickSubSlugInput" class="form-input" placeholder="cardigans">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sequence (Order)</label>
+            <input type="number" id="quickSubOrderInput" class="form-input" placeholder="1" min="1" value="1" title="Display position order (1, 2, 3...)">
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -254,6 +266,7 @@
     e.preventDefault();
     const title = document.getElementById('quickCatTitleInput').value.trim();
     const handle = document.getElementById('quickCatSlugInput').value.trim();
+    const order = document.getElementById('quickCatOrderInput').value;
     const btn = document.getElementById('btnQuickCatSave');
     btn.disabled = true;
     btn.innerText = 'Saving...';
@@ -262,7 +275,7 @@
       const res = await fetch('/dashboard/api/categories/add/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'category', title, handle })
+        body: JSON.stringify({ type: 'category', title, handle, order })
       });
       const data = await res.json();
       if (res.ok && data.success) {
@@ -270,12 +283,12 @@
         const catSelect = document.getElementById('prodCategory');
         const opt = document.createElement('option');
         opt.value = data.id;
-        opt.innerText = title;
+        opt.innerText = `${title} (Seq: ${data.order || order || 1})`;
         opt.selected = true;
         catSelect.appendChild(opt);
         filterSubcategories();
 
-        showToast(`Category "${title}" created and selected!`);
+        showToast(`Category "${title}" (Seq: ${data.order}) created and selected!`);
         closeQuickCatModal();
       } else {
         showToast(data.error || 'Failed to create category', true);
@@ -316,6 +329,7 @@
     const catName = catSelect.options[catSelect.selectedIndex].text;
     const title = document.getElementById('quickSubTitleInput').value.trim();
     const handle = document.getElementById('quickSubSlugInput').value.trim();
+    const order = document.getElementById('quickSubOrderInput').value;
 
     if (!catId) {
       showToast('Parent Category is mandatory!', true);
@@ -330,7 +344,7 @@
       const res = await fetch('/dashboard/api/categories/add/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'subcategory', parent_id: catId, title, handle })
+        body: JSON.stringify({ type: 'subcategory', parent_id: catId, title, handle, order })
       });
       const data = await res.json();
       if (res.ok && data.success) {
@@ -339,11 +353,11 @@
         const opt = document.createElement('option');
         opt.value = data.id;
         opt.setAttribute('data-parent-cat', catId);
-        opt.innerText = `${title} (${catName})`;
+        opt.innerText = `${title} (Seq: ${data.order || order || 1})`;
         opt.selected = true;
         subSelect.appendChild(opt);
 
-        showToast(`Subcategory "${title}" created and selected!`);
+        showToast(`Subcategory "${title}" (Seq: ${data.order}) created and selected!`);
         closeQuickSubModal();
       } else {
         showToast(data.error || 'Failed to create subcategory', true);
