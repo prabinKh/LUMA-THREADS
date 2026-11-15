@@ -64,17 +64,6 @@ const AdminLayout = () => {
     }
   };
 
-  if (loading || checkingAuth) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-muted-foreground font-medium animate-pulse">Verifying access...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background flex">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
@@ -85,7 +74,8 @@ const AdminLayout = () => {
           <div className="flex items-center gap-3 sm:gap-4">
             <button 
               onClick={() => setIsSidebarOpen(true)}
-              className="lg:hidden p-2 hover:bg-accent rounded-xl transition-colors text-muted-foreground"
+              className="md:hidden p-2 hover:bg-accent rounded-xl transition-colors text-muted-foreground"
+              aria-label="Toggle Menu"
             >
               <Menu size={22} />
             </button>

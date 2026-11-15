@@ -173,7 +173,7 @@ const SidebarContent = ({ onClose }: { onClose?: () => void }) => {
             </div>
           </Link>
           {onClose && (
-            <button onClick={onClose} className="lg:hidden p-2 hover:bg-accent rounded-xl text-muted-foreground transition-colors">
+            <button onClick={onClose} className="md:hidden p-2 hover:bg-accent rounded-xl text-muted-foreground transition-colors" aria-label="Close Sidebar">
               <X size={20} />
             </button>
           )}
@@ -314,12 +314,12 @@ const SidebarContent = ({ onClose }: { onClose?: () => void }) => {
 const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   return (
     <>
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:block h-screen sticky top-0 flex-shrink-0">
+      {/* Desktop & Tablet Sidebar (Visible on all md+ screens >= 768px) */}
+      <aside className="hidden md:block h-screen sticky top-0 flex-shrink-0 w-64 lg:w-72 bg-card border-r border-border z-30">
         <SidebarContent onClose={onClose} />
       </aside>
 
-      {/* Mobile Sidebar */}
+      {/* Mobile Drawer Navigation (screens < 768px) */}
       <AnimatePresence>
         {isOpen && (
           <>
@@ -328,14 +328,14 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={onClose}
-              className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
+              className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
             />
             <motion.aside
-              initial={{ x: -280 }}
+              initial={{ x: -300 }}
               animate={{ x: 0 }}
-              exit={{ x: -280 }}
+              exit={{ x: -300 }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 w-64 z-50 lg:hidden shadow-2xl"
+              className="fixed inset-y-0 left-0 w-72 z-50 md:hidden shadow-2xl bg-card border-r border-border"
             >
               <SidebarContent onClose={onClose} />
             </motion.aside>

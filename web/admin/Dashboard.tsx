@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   Truck,
   Wrench,
-  MessageSquare
+  MessageSquare,
+  Package
 } from "lucide-react";
 import { useGSAPReveal } from "@/hooks/useGSAP";
 import { 
@@ -140,17 +141,6 @@ const AdminDashboard = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-medium animate-pulse">Loading dashboard data...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-full bg-background" ref={containerRef}>
       <div className="flex flex-col min-w-0 min-h-full">
@@ -161,7 +151,7 @@ const AdminDashboard = () => {
               { label: "Total Revenue", value: formatPrice(totalRevenue), icon: DollarSign, color: "text-emerald-500", trend: "+12.5%", isUp: true, bg: "bg-emerald-500/5" },
               { label: "Total Orders", value: (Array.isArray(orders) ? orders : []).length, icon: ShoppingCart, color: "text-blue-500", trend: "+8.2%", isUp: true, bg: "bg-blue-500/5" },
               { label: "Total Customers", value: (Array.isArray(customers) ? customers : []).length, icon: Users, color: "text-indigo-500", trend: "+5.1%", isUp: true, bg: "bg-indigo-500/5" },
-              { label: "Active Repairs", value: activeRepairs, icon: Wrench, color: "text-rose-500", trend: "+3.4%", isUp: true, bg: "bg-rose-500/5" },
+              { label: "Catalog Products", value: (Array.isArray(productsList) ? productsList : []).length, icon: Package, color: "text-rose-500", trend: "+3 new", isUp: true, bg: "bg-rose-500/5" },
               { label: "Pending Orders", value: pendingOrders, icon: Clock, color: "text-amber-500", trend: "-2.4%", isUp: false, bg: "bg-amber-500/5" },
             ].map((stat, i) => (
               <motion.div 

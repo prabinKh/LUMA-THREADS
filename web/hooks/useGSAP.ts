@@ -10,35 +10,31 @@ if (typeof window !== 'undefined') {
 export const useGSAPReveal = (
   scope: React.RefObject<HTMLElement | null>,
   selector: string,
-  vars: gsap.TweenVars = { opacity: 0, y: 50, duration: 1, ease: 'power3.out' },
+  vars: gsap.TweenVars = { opacity: 0, y: 20, duration: 0.5, ease: 'power2.out' },
   scrollTriggerOptions: Partial<ScrollTrigger.Vars> = {}
 ) => {
-  // Use stringified versions for stable dependencies
-  const varsString = JSON.stringify(vars);
-  const optionsString = JSON.stringify(scrollTriggerOptions);
+  useEffect(() => {
+    if (!scope.current) return;
+    const elements = scope.current.querySelectorAll(selector);
+    if (!elements || elements.length === 0) return;
 
-  useLayoutEffect(() => {
-    if (!scope.current || !ScrollTrigger) return;
+    // Immediately ensure all elements are visible (prevents blank screen)
+    elements.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      htmlEl.style.opacity = "1";
+      htmlEl.style.transform = "none";
+    });
 
-    const ctx = gsap.context(() => {
-      // Ensure the selector exists within the scope
-      const elements = scope.current?.querySelectorAll(selector);
-      if (!elements || elements.length === 0) return;
-
-      gsap.from(selector, {
-        ...vars,
-        scrollTrigger: {
-          trigger: selector,
-          start: 'top 85%',
-          toggleActions: 'play none none none',
-          ...scrollTriggerOptions,
-        },
-      });
-    }, scope.current);
-
-    return () => ctx.revert();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scope, selector, varsString, optionsString]);
+    try {
+      gsap.fromTo(
+        elements,
+        { opacity: 0.85, y: 10 },
+        { opacity: 1, y: 0, duration: 0.35, stagger: 0.03, ease: 'power2.out' }
+      );
+    } catch (e) {
+      // Fallback: elements are already styled to opacity 1
+    }
+  }, [scope, selector]);
 };
 
 export const useGSAPParallax = (
