@@ -208,17 +208,33 @@ def api_product_create(request):
     if not title:
         return JsonResponse({"error": "Product title is required"}, status=400)
 
-    handle = data.get("handle", "").strip() or title.lower().replace(" ", "-").replace("/", "-")
+    import time
+    base_handle = data.get("handle", "").strip() or data.get("slug", "").strip() or title.lower().replace(" ", "-").replace("/", "-")
+    handle = base_handle
+    if Product.objects.filter(handle=handle).exists():
+        handle = f"{base_handle}-{int(time.time())}"
+
     price = Decimal(str(data.get("price") or "168.00"))
     
-    category_id = data.get("category_id") or None
-    subcategory_id = data.get("subcategory_id") or None
+    category_id = data.get("category_id") or data.get("category")
+    if category_id and not str(category_id).isdigit():
+        cat = Category.objects.filter(Q(handle=category_id) | Q(title__iexact=str(category_id))).first()
+        category_id = cat.id if cat else None
+
+    subcategory_id = data.get("subcategory_id") or data.get("subcategory")
+    if subcategory_id and not str(subcategory_id).isdigit():
+        sub = SubCategory.objects.filter(Q(handle=subcategory_id) | Q(title__iexact=str(subcategory_id))).first()
+        subcategory_id = sub.id if sub else None
     
     # Validation: if subcategory is selected, ensure it belongs to category
     if subcategory_id and not category_id:
         sub = SubCategory.objects.filter(id=subcategory_id).first()
         if sub:
             category_id = sub.category_id
+
+    images = data.get("images", [])
+    primary_img = data.get("image") or (images[0] if isinstance(images, list) and images else "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=600&q=80")
+    hover_img = data.get("hover_image") or (images[1] if isinstance(images, list) and len(images) > 1 else primary_img)
 
     sizes = data.get("sizes", ["XS", "S", "M", "L"])
     if isinstance(sizes, str):
@@ -239,8 +255,8 @@ def api_product_create(request):
         sizes=sizes,
         colorway=data.get("colorway", "Default"),
         color=data.get("color", "default"),
-        image=data.get("image", "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=600&q=80"),
-        hover_image=data.get("hover_image", "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=600&q=80"),
+        image=primary_img,
+        hover_image=hover_img,
         is_active=True,
     )
 
@@ -718,6 +734,25 @@ def api_cart_update_status(request, cart_id):
     cart_item.status = data.get("status", cart_item.status)
     cart_item.save()
     return JsonResponse({"success": True, "message": f"Cart item marked as {cart_item.status}"})
+
+
+@csrf_exempt
+def api_upload_file(request):
+    """API endpoint to upload images or assets."""
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    
+    file_obj = request.FILES.get("file") or request.FILES.get("image")
+    if not file_obj:
+        return JsonResponse({"error": "No file uploaded"}, status=400)
+    
+    from django.conf import settings
+    from django.core.files.storage import default_storage
+    upload_subpath = request.POST.get("path", "products/uploads")
+    filename = f"{upload_subpath}/{file_obj.name}".replace("//", "/")
+    saved_path = default_storage.save(filename, file_obj)
+    file_url = f"{settings.MEDIA_URL}{saved_path}"
+    return JsonResponse({"success": True, "url": file_url})
 
 
 @csrf_exempt

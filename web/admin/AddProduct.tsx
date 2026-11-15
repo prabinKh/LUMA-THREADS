@@ -775,19 +775,17 @@ const AddProduct = () => {
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
-    if (!user || !isAdmin) {
-      toast.error("You do not have permission to add products.");
+    if (!formData.name.trim()) {
+      toast.error("Product name is required.");
       return;
     }
 
-    if (!formData.name.trim() || !formData.slug.trim()) {
-      toast.error("Product name and slug are required.");
-      return;
+    if (!formData.slug.trim()) {
+      formData.slug = formData.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
     }
 
     if (!formData.brand?.trim()) {
-      toast.error("Product brand is required.");
-      return;
+      formData.brand = "Luma Threads";
     }
 
     const priceNum = Number(formData.price.toString().replace(/,/g, ''));

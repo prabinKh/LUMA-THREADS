@@ -29,6 +29,7 @@ from products.dashboard_views import (
     api_user_create,
     api_customers_list,
     api_category_features,
+    api_upload_file,
 )
 from orders.views import OrderListCreateView
 from products.views import CategoryListView, SubCategoryListView
@@ -91,6 +92,8 @@ urlpatterns = [
     re_path(r"^api/admin/subcategories/?$", SubCategoryListView.as_view(), name="api-admin-subcategories-list"),
     re_path(r"^api/admin/category-features/?$", api_category_features, name="api-admin-category-features"),
     re_path(r"^api/admin/customers/?$", api_customers_list, name="api-admin-customers"),
+    re_path(r"^api/admin/upload/?$", api_upload_file, name="api-admin-upload"),
+    re_path(r"^api/admin/upload-model/?$", api_upload_file, name="api-admin-upload-model"),
     # General API
     path("api/", api_root, name="api-root"),
     # Accounts
