@@ -34,12 +34,15 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized (e.g., redirect to login or refresh token)
-      console.error('Unauthorized access - potential token expiration');
+      // Handle unauthorized without ejecting admin users into broken 404 pages
+      console.warn('Unauthorized access - potential token expiration');
       safeStorage.removeItem(tenantStorageKey("access_token"));
       safeStorage.removeItem(tenantStorageKey("refresh_token"));
-      if (window.location.pathname !== '/signin') {
-        window.location.href = '/signin';
+      if (typeof window !== 'undefined') {
+        const currentPath = window.location.pathname;
+        if (!currentPath.startsWith('/admin') && currentPath !== '/account/login' && currentPath !== '/login') {
+          window.location.href = '/account/login';
+        }
       }
     }
     return Promise.reject(error);

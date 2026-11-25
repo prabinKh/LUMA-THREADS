@@ -22,7 +22,8 @@ interface ParsedProduct {
   slug: string;
 }
 
-const truncateProductName = (name: string) => {
+const truncateProductName = (name?: string) => {
+  if (!name) return "";
   const words = name.split(" ");
   return words.length > 15 ? words.slice(0, 15).join(" ") + "..." : name;
 };
@@ -59,7 +60,8 @@ const AdminProducts = () => {
   const categories = useMemo(() => ["All", ...new Set(products.map(p => p.category))], [products]);
 
   const filteredProducts = useMemo(() => products.filter(product => {
-    const matchesSearch = (product.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+    const prodName = product.name || product.title || "";
+    const matchesSearch = prodName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (product.description?.toLowerCase() || "").includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === "All" || product.category === selectedCategory;
     return matchesSearch && matchesCategory;
@@ -203,9 +205,9 @@ Summit Fold5 DualPad Tablet,899.00,Phones,Summit,Folding multi-screen mobile wor
   };
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 min-h-full pb-20 lg:pb-0">
-      <main className="flex-1 p-4 md:p-8">
-        <div className="max-w-7xl mx-auto space-y-8">
+    <div className="flex-1 flex flex-col min-w-0 min-h-full w-full pb-20 lg:pb-0">
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 w-full">
+        <div className="w-full space-y-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
               <h1 className="text-3xl font-bold text-foreground">Product Management</h1>
@@ -298,10 +300,10 @@ Summit Fold5 DualPad Tablet,899.00,Phones,Summit,Folding multi-screen mobile wor
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-12 h-12 rounded-lg overflow-hidden bg-accent flex-shrink-0">
-                              <SafeImage src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                              <SafeImage src={product.image} alt={product.name || product.title} className="w-full h-full object-cover" />
                             </div>
                             <div className="min-w-0">
-                              <div className="text-sm font-bold text-foreground truncate" title={product.name}>{truncateProductName(product.name)}</div>
+                              <div className="text-sm font-bold text-foreground truncate" title={product.name || product.title}>{truncateProductName(product.name || product.title)}</div>
                               <div className="text-xs text-muted-foreground truncate max-w-[200px]">{product.description}</div>
                             </div>
                           </div>
@@ -323,7 +325,7 @@ Summit Fold5 DualPad Tablet,899.00,Phones,Summit,Folding multi-screen mobile wor
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <Link
-                              to={product.slug || product.id ? `/product/${product.slug || product.id}` : "#"}
+                              to={product.slug || product.id ? `/products/${product.slug || product.id}` : "#"}
                               target="_blank"
                               className={`p-2 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all ${!(product.slug || product.id) ? "pointer-events-none" : ""}`}
                               title="View on store"
@@ -380,11 +382,11 @@ Summit Fold5 DualPad Tablet,899.00,Phones,Summit,Folding multi-screen mobile wor
                   <div key={product.id} className="p-4 space-y-4">
                     <div className="flex gap-4">
                       <div className="w-20 h-20 rounded-xl overflow-hidden bg-accent flex-shrink-0">
-                        <SafeImage src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                        <SafeImage src={product.image} alt={product.name || product.title} className="w-full h-full object-cover" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-2">
-                          <h3 className="text-sm font-bold text-foreground line-clamp-2" title={product.name}>{truncateProductName(product.name)}</h3>
+                          <h3 className="text-sm font-bold text-foreground line-clamp-2" title={product.name || product.title}>{truncateProductName(product.name || product.title)}</h3>
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-accent text-muted-foreground border border-border whitespace-nowrap">
                             {product.category}
                           </span>

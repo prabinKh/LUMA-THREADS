@@ -48,7 +48,7 @@ const ServiceCategories = () => {
   }, []);
 
   const filteredCategories = categories.filter(cat => 
-    cat.name.toLowerCase().includes(searchQuery.toLowerCase())
+    (cat.name || cat.title || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -131,9 +131,9 @@ const ServiceCategories = () => {
                         title={brand.name}
                       >
                        {brand.logo_url ? (
-                         <img src={brand.logo_url} alt={brand.name} className="w-full h-full object-cover" />
+                         <img src={brand.logo_url} alt={brand.name || "Brand"} className="w-full h-full object-cover" />
                        ) : (
-                         <span className="text-[10px] font-bold">{brand.name[0]}</span>
+                         <span className="text-[10px] font-bold">{brand.name ? brand.name[0] : "B"}</span>
                        )}
                       </div>
                     ))}

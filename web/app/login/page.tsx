@@ -45,6 +45,14 @@ function LoginForm() {
     }, 600);
   };
 
+  const handleAdminLogin = () => {
+    login("admin@lumathreads.com", "Store Administrator");
+    setSuccess("Signed in as Store Administrator! Redirecting to Admin Panel...");
+    setTimeout(() => {
+      router.push("/admin");
+    }, 600);
+  };
+
   if (isLoggedIn && user) {
     return (
       <div
@@ -171,11 +179,32 @@ function LoginForm() {
           padding: "1.4rem",
           marginBottom: "2.5rem",
           textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.8rem",
         }}
       >
-        <p style={{ fontSize: "1.1rem", fontWeight: 600, margin: "0 0 0.8rem", textTransform: "uppercase", letterSpacing: "1px" }}>
-          ⚡ Fast Demo Test
+        <p style={{ fontSize: "1.1rem", fontWeight: 600, margin: "0", textTransform: "uppercase", letterSpacing: "1px" }}>
+          ⚡ Fast 1-Click Demo Login
         </p>
+        <button
+          type="button"
+          onClick={handleAdminLogin}
+          style={{
+            width: "100%",
+            padding: "1rem",
+            background: "#10b981",
+            color: "#fff",
+            border: "none",
+            fontSize: "1.1rem",
+            fontWeight: 700,
+            letterSpacing: "1.5px",
+            textTransform: "uppercase",
+            cursor: "pointer",
+          }}
+        >
+          🔐 Sign In as Store Administrator (Admin Panel)
+        </button>
         <button
           type="button"
           onClick={handleDemoLogin}
@@ -192,7 +221,7 @@ function LoginForm() {
             cursor: "pointer",
           }}
         >
-          1-Click Sign In as Emma Watson
+          👤 Sign In as Customer (Emma Watson)
         </button>
       </div>
 

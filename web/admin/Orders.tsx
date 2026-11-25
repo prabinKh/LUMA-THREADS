@@ -48,9 +48,9 @@ const AdminOrders = ({ filterStatus, excludeStatuses, paymentStatus }: AdminOrde
   };
 
   const filteredOrders = orders.filter(order => 
-    order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.customerEmail.toLowerCase().includes(searchTerm.toLowerCase())
+    (order.customerName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    String(order.id || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (order.customerEmail || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getStatusColor = (status: Order["status"]) => {
@@ -97,9 +97,9 @@ const AdminOrders = ({ filterStatus, excludeStatuses, paymentStatus }: AdminOrde
   };
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 min-h-full pb-20 lg:pb-0">
-      <main className="flex-1 p-4 md:p-8">
-        <div className="max-w-7xl mx-auto space-y-8">
+    <div className="flex-1 flex flex-col min-w-0 min-h-full w-full pb-20 lg:pb-0">
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 w-full">
+        <div className="w-full space-y-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
               <h1 className="text-3xl font-bold text-foreground">{getPageTitle()}</h1>
@@ -290,12 +290,15 @@ const AdminOrders = ({ filterStatus, excludeStatuses, paymentStatus }: AdminOrde
                         </div>
                         <div className="space-y-2 mt-4">
                           <div className="flex items-start gap-2 text-xs text-muted-foreground">
-                            <Phone size={14} className="text-muted-foreground mt-0.5" />
-                            <span>{selectedOrder.shippingAddress.phone}</span>
+                            <Phone size={14} className="text-muted-foreground mt-0.5 shrink-0" />
+                            <span>{selectedOrder.shippingAddress?.phone || "No phone provided"}</span>
                           </div>
                           <div className="flex items-start gap-2 text-xs text-muted-foreground">
-                            <MapPin size={14} className="text-muted-foreground mt-0.5" />
-                            <span>{selectedOrder.shippingAddress.address}, {selectedOrder.shippingAddress.city}</span>
+                            <MapPin size={14} className="text-muted-foreground mt-0.5 shrink-0" />
+                            <span>
+                              {selectedOrder.shippingAddress?.address || "Address on file"}
+                              {selectedOrder.shippingAddress?.city ? `, ${selectedOrder.shippingAddress.city}` : ""}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -308,8 +311,12 @@ const AdminOrders = ({ filterStatus, excludeStatuses, paymentStatus }: AdminOrde
                         <div className="space-y-3 max-h-60 overflow-y-auto pr-2 no-scrollbar">
                           {(selectedOrder.items || []).map((item, i) => (
                             <div key={i} className="flex gap-3">
-                              <div className="w-12 h-12 bg-accent rounded-lg overflow-hidden flex-shrink-0">
-                                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                              <div className="w-12 h-12 bg-accent rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center border border-border">
+                                {item.image ? (
+                                  <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <Package size={20} className="text-muted-foreground" />
+                                )}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-bold truncate text-foreground">{item.name}</p>

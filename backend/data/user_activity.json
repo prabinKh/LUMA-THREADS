@@ -1,0 +1,74 @@
+[
+  {
+    "id": "act_pg_hvy09g091p",
+    "uid": "guest_dw70cum0",
+    "email": "guest_dw70cum0@guest.lumathreads.local",
+    "displayName": "Visitor #CUM0",
+    "pageType": "admin",
+    "path": "/admin/customers",
+    "action": "page_view",
+    "duration": 0,
+    "metadata": {
+      "pageTitle": "Luma Threads | Premium Apparel",
+      "referrer": ""
+    },
+    "timestamp": "2026-11-25T07:24:51.125Z",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+    "screenResolution": "1440x900",
+    "ipAddress": "127.0.0.1"
+  },
+  {
+    "id": "act_pg_7fiy27ii8v",
+    "uid": "guest_dw70cum0",
+    "email": "guest_dw70cum0@guest.lumathreads.local",
+    "displayName": "Visitor #CUM0",
+    "pageType": "admin",
+    "path": "/admin/activity",
+    "action": "page_view",
+    "duration": 2,
+    "metadata": {
+      "pageTitle": "Luma Threads | Premium Apparel",
+      "totalSecondsOnPage": 2
+    },
+    "timestamp": "2026-11-25T07:24:50.508Z",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+    "screenResolution": "1440x900",
+    "ipAddress": "127.0.0.1"
+  },
+  {
+    "id": "act_pg_4p7ge0pwic",
+    "uid": "guest_dw70cum0",
+    "email": "guest_dw70cum0@guest.lumathreads.local",
+    "displayName": "Visitor #CUM0",
+    "pageType": "admin",
+    "path": "/admin/footer",
+    "action": "page_view",
+    "duration": 1,
+    "metadata": {
+      "pageTitle": "Luma Threads | Premium Apparel",
+      "totalSecondsOnPage": 1
+    },
+    "timestamp": "2026-11-25T07:24:47.767Z",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+    "screenResolution": "1440x900",
+    "ipAddress": "127.0.0.1"
+  },
+  {
+    "id": "act_pg_s7eqrxglnj",
+    "uid": "guest_dw70cum0",
+    "email": "guest_dw70cum0@guest.lumathreads.local",
+    "displayName": "Visitor #CUM0",
+    "pageType": "admin",
+    "path": "/admin/hero-settings",
+    "action": "page_view",
+    "duration": 1,
+    "metadata": {
+      "pageTitle": "Luma Threads | Premium Apparel",
+      "totalSecondsOnPage": 1
+    },
+    "timestamp": "2026-11-25T07:24:45.096Z",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+    "screenResolution": "1440x900",
+    "ipAddress": "127.0.0.1"
+  }
+]

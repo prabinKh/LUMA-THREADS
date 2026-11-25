@@ -1,0 +1,119 @@
+{
+  "newsletter": {
+    "enabled": true,
+    "title": "STAY IN THE KNOW",
+    "placeholder": "Enter your email",
+    "buttonText": "\u2192",
+    "successMessage": "Thank you for subscribing to Luma Threads!"
+  },
+  "customerSupport": {
+    "enabled": true,
+    "heading": "CUSTOMER SUPPORT",
+    "email": "customerservice@lumathreads.com",
+    "hours": "Mon - Sat 7AM - 9PM PST \u2022 Concierge Active",
+    "phone": "+1 (800) 586-2847",
+    "address": "Atelier Studio, Los Angeles, CA"
+  },
+  "social": {
+    "enabled": true,
+    "facebook": "https://www.facebook.com/pistoladenimla/",
+    "instagram": "https://www.instagram.com/pistoladenim/?hl=en",
+    "twitter": "https://twitter.com/pistoladenim",
+    "pinterest": "https://www.pinterest.com/pistoladenim/",
+    "tiktok": "https://www.tiktok.com/@pistoladenim",
+    "youtube": ""
+  },
+  "columns": [
+    {
+      "id": "col-shop",
+      "title": "SHOP",
+      "enabled": true,
+      "links": [
+        {
+          "label": "All New",
+          "url": "/collections/all-new"
+        },
+        {
+          "label": "All Denim",
+          "url": "/collections/all-denim"
+        },
+        {
+          "label": "Best Sellers",
+          "url": "/collections/best-sellers"
+        },
+        {
+          "label": "Barrel Jeans",
+          "url": "/collections/all-denim"
+        },
+        {
+          "label": "Straight Leg",
+          "url": "/collections/all-denim"
+        },
+        {
+          "label": "New Link",
+          "url": "/collections/all-denim"
+        }
+      ]
+    },
+    {
+      "id": "col-about",
+      "title": "ABOUT",
+      "enabled": true,
+      "links": [
+        {
+          "label": "Our Story",
+          "url": "/pages/about-us"
+        },
+        {
+          "label": "Denim Fit Guide",
+          "url": "/collections/all-denim"
+        },
+        {
+          "label": "Sustainability",
+          "url": "/pages/about-us"
+        },
+        {
+          "label": "Stockists",
+          "url": "/pages/about-us"
+        }
+      ]
+    },
+    {
+      "id": "col-help",
+      "title": "HELP",
+      "enabled": true,
+      "links": [
+        {
+          "label": "Shipping & Returns",
+          "url": "/pages/about-us"
+        },
+        {
+          "label": "FAQ",
+          "url": "/pages/about-us"
+        },
+        {
+          "label": "Size Guide",
+          "url": "/pages/about-us"
+        },
+        {
+          "label": "Runway Archive Vault",
+          "url": "/collections/all-denim"
+        }
+      ]
+    }
+  ],
+  "bottomBar": {
+    "copyright": "\u00a9 2026, Luma Threads. All rights reserved.",
+    "showPaymentBadges": true,
+    "paymentBadges": [
+      "VISA",
+      "MC",
+      "AMEX",
+      "DISC",
+      "APPLE PAY",
+      "PAYPAL",
+      "KLARNA",
+      "AFTERPAY"
+    ]
+  }
+}

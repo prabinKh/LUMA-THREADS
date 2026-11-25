@@ -10,14 +10,36 @@ class OrderListCreateView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
-        if request.user and request.user.is_authenticated:
-            orders = Order.objects.filter(user=request.user)
-        else:
-            email = request.query_params.get("email")
-            if email:
-                orders = Order.objects.filter(customer_email__iexact=email)
-            else:
-                orders = Order.objects.all()[:20]
+        orders = Order.objects.all().order_by("-created_at")
+
+        # Allow non-admin customer filtering
+        is_admin_req = (
+            "/admin/" in request.path
+            or (request.user and (request.user.is_staff or getattr(request.user, "is_admin", False)))
+        )
+
+        email = request.query_params.get("email")
+        if email and not is_admin_req:
+            orders = orders.filter(customer_email__iexact=email)
+        elif request.user and request.user.is_authenticated and not is_admin_req:
+            orders = orders.filter(user=request.user)
+
+        # Status filter
+        status_param = request.query_params.get("status")
+        if status_param and status_param.lower() not in ["all", ""]:
+            orders = orders.filter(status__iexact=status_param)
+
+        # Exclude status filter
+        exclude_status = request.query_params.get("exclude_status")
+        if exclude_status:
+            exclude_list = [s.strip().lower() for s in exclude_status.split(",") if s.strip()]
+            for exc in exclude_list:
+                orders = orders.exclude(status__iexact=exc)
+
+        # Payment status filter
+        payment_status = request.query_params.get("payment_status")
+        if payment_status:
+            orders = orders.filter(payment_status__iexact=payment_status)
 
         serializer = OrderSerializer(orders, many=True)
         return Response(serializer.data)

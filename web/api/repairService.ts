@@ -67,8 +67,7 @@ export const repairService = {
         return data.results;
       }
       return Array.isArray(data) ? data : [];
-    } catch (error) {
-      console.error("Error fetching all tickets:", error);
+    } catch {
       return [];
     }
   },

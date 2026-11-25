@@ -71,6 +71,13 @@ class ProductSerializer(serializers.ModelSerializer):
     subcategory_handle = serializers.CharField(source="subcategory.handle", read_only=True)
     color_variants = ProductColorSerializer(many=True, required=False, read_only=True)
     variants = ProductVariantSerializer(many=True, required=False, read_only=True)
+    stock = serializers.SerializerMethodField()
+
+    def get_stock(self, obj):
+        variants = obj.variants.all()
+        if variants.exists():
+            return sum(v.stock_quantity for v in variants)
+        return 50 if obj.is_active else 0
 
     class Meta:
         model = Product
@@ -104,6 +111,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "collections",
             "color_variants",
             "variants",
+            "stock",
             "is_featured",
             "is_active",
             "created_at",

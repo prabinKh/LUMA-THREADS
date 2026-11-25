@@ -48,18 +48,28 @@ const SalesCategoryReport = () => {
     return () => clearInterval(interval);
   }, [navigate]);
 
-  const categories = Array.from(new Set(products.map(p => p.category_name || p.category)));
+  const isMatch = (item: any, p: Product) => {
+    if (!item) return false;
+    if (item.productId && (String(item.productId) === String(p.id) || String(item.productId) === String(p.handle))) return true;
+    if (item.product_handle && (item.product_handle === p.handle || item.product_handle === p.slug)) return true;
+    if (item.productHandle && (item.productHandle === p.handle || item.productHandle === p.slug)) return true;
+    const itemName = (item.name || item.product_name || "").toLowerCase().trim();
+    const pName = (p.name || p.title || "").toLowerCase().trim();
+    return itemName && pName && itemName === pName;
+  };
+
+  const categories = Array.from(new Set(products.map(p => p.category_name || p.category || "Apparel")));
   const categoryStats = categories.map(categoryName => {
-    const categoryProducts = products.filter(p => (p.category_name || p.category) === categoryName);
-    const conformOrders = orders.filter(o => o.status === "process_conform");
+    const categoryProducts = products.filter(p => (p.category_name || p.category || "Apparel") === categoryName);
+    const validOrders = orders.filter(o => o.status !== "cancelled" && o.status !== "process_dont_conform");
     
-    const salesCount = conformOrders.reduce((acc, o) => {
-      const itemsInCategory = o.items?.filter(i => categoryProducts.some(p => p.id === i.productId)) || [];
-      return acc + itemsInCategory.reduce((sum, item) => sum + item.quantity, 0);
+    const salesCount = validOrders.reduce((acc, o) => {
+      const itemsInCategory = o.items?.filter(i => categoryProducts.some(p => isMatch(i, p))) || [];
+      return acc + itemsInCategory.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
     }, 0);
-    const revenue = conformOrders.reduce((acc, o) => {
-      const itemsInCategory = o.items?.filter(i => categoryProducts.some(p => p.id === i.productId)) || [];
-      return acc + itemsInCategory.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const revenue = validOrders.reduce((acc, o) => {
+      const itemsInCategory = o.items?.filter(i => categoryProducts.some(p => isMatch(i, p))) || [];
+      return acc + itemsInCategory.reduce((sum, item) => sum + ((Number(item.price) || 0) * (Number(item.quantity) || 1)), 0);
     }, 0);
     return {
       name: categoryName,
@@ -83,7 +93,7 @@ const SalesCategoryReport = () => {
   return (
     <div className="flex-1 min-h-screen overflow-y-auto no-scrollbar pb-20 lg:pb-0" ref={containerRef}>
 
-        <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-8">
+        <div className="p-4 lg:p-8 w-full space-y-8">
           <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-sm gsap-reveal">
             <div className="p-6 border-b border-border flex items-center justify-between">
               <h3 className="text-lg font-display font-bold">Category Sales Details</h3>

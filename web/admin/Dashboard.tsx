@@ -142,9 +142,9 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-full bg-background" ref={containerRef}>
-      <div className="flex flex-col min-w-0 min-h-full">
-        <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-8 w-full">
+    <div className="min-h-full w-full bg-background" ref={containerRef}>
+      <div className="flex flex-col min-w-0 min-h-full w-full">
+        <div className="p-4 sm:p-6 lg:p-8 xl:p-10 w-full space-y-8">
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 gsap-reveal">
             {[

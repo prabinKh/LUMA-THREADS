@@ -63,11 +63,21 @@ export function resolveCollectionHandle(handle: string): string {
 
 export function getCollection(handle: string): Collection | undefined {
   const resolved = resolveCollectionHandle(handle);
-  const col = catalog.collections[resolved];
+  const col = catalog.collections[resolved] || catalog.collections[handle];
   if (col) {
     return { ...col, handle: resolved };
   }
-  return undefined;
+  const formattedTitle = handle
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+  return {
+    handle,
+    title: formattedTitle,
+    description: `Curated ${formattedTitle} collection at Luma Threads.`,
+    image: "",
+    products: [],
+  };
 }
 
 export function getCollectionProducts(handle: string): Product[] {
@@ -111,14 +121,23 @@ export function formatPrice(price: number | string): string {
   return price;
 }
 
+async function safeJsonFetch(url: string): Promise<any> {
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return null;
+    const text = await res.text();
+    if (!text || !text.trim()) return null;
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 // Live Django API asynchronous integration functions with resilient fallback
 export async function getAllProductsAsync(): Promise<Product[]> {
   try {
-    const res = await fetch(`${DJANGO_URL}/store/products/`, {
-      cache: "no-store",
-    });
-    if (res.ok) {
-      const data = await res.json();
+    const data = await safeJsonFetch(`${DJANGO_URL}/store/products/`);
+    if (data) {
       const list = Array.isArray(data) ? data : data?.results;
       if (Array.isArray(list) && list.length > 0) {
         return list as Product[];
@@ -132,14 +151,9 @@ export async function getAllProductsAsync(): Promise<Product[]> {
 
 export async function getProductAsync(handle: string): Promise<Product | undefined> {
   try {
-    const res = await fetch(`${DJANGO_URL}/store/products/${handle}/`, {
-      cache: "no-store",
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.handle) {
-        return data as Product;
-      }
+    const data = await safeJsonFetch(`${DJANGO_URL}/store/products/${handle}/`);
+    if (data && data.handle) {
+      return data as Product;
     }
   } catch (err) {
     console.warn(`Django API product lookup failed for ${handle}, using fallback:`, err);
@@ -150,19 +164,57 @@ export async function getProductAsync(handle: string): Promise<Product | undefin
 export async function getCollectionProductsAsync(handle: string): Promise<Product[]> {
   const resolved = resolveCollectionHandle(handle);
   try {
-    const res = await fetch(`${DJANGO_URL}/store/products/?category=${resolved}`, {
-      cache: "no-store",
-    });
-    if (res.ok) {
-      const data = await res.json();
-      const list = Array.isArray(data) ? data : data?.results;
+    // If all or shop-all, fetch all products
+    if (handle === "all" || handle === "shop-all" || resolved === "all" || resolved === "shop-all") {
+      const all = await getAllProductsAsync();
+      if (all && all.length > 0) return all;
+    }
+
+    // Try collection query first
+    const dataCol = await safeJsonFetch(`${DJANGO_URL}/store/products/?collection=${encodeURIComponent(handle)}`);
+    if (dataCol) {
+      const list = Array.isArray(dataCol) ? dataCol : dataCol?.results;
+      if (Array.isArray(list) && list.length > 0) {
+        return list as Product[];
+      }
+    }
+
+    // Try category query next (denim, tops, sweaters, dresses, jackets, accessories)
+    const dataCat = await safeJsonFetch(`${DJANGO_URL}/store/products/?category=${encodeURIComponent(resolved)}`);
+    if (dataCat) {
+      const list = Array.isArray(dataCat) ? dataCat : dataCat?.results;
       if (Array.isArray(list) && list.length > 0) {
         return list as Product[];
       }
     }
   } catch (err) {
-    console.warn(`Django API collection products failed for ${handle}, using fallback:`, err);
+    console.warn(`Django API collection products failed for ${handle}:`, err);
   }
+
+  // Resilient fallback: fetch all products and filter in memory
+  try {
+    const all = await getAllProductsAsync();
+    if (all && all.length > 0) {
+      const hLower = handle.toLowerCase();
+      const rLower = resolved.toLowerCase();
+      const filtered = all.filter((p: any) => {
+        const cat = (p.category_handle || p.category_title || p.category || "").toLowerCase();
+        const sub = (p.subcategory_handle || p.subcategory_title || p.subcategory || "").toLowerCase();
+        const colList = Array.isArray(p.collections) ? p.collections.map((c: any) => String(c).toLowerCase()) : [];
+        return (
+          cat === hLower ||
+          cat === rLower ||
+          sub === hLower ||
+          sub === rLower ||
+          colList.includes(hLower) ||
+          colList.includes(rLower)
+        );
+      });
+      if (filtered.length > 0) return filtered;
+      return all;
+    }
+  } catch {}
+
   return getCollectionProducts(handle);
 }
 

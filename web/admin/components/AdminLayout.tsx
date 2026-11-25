@@ -9,6 +9,8 @@ import { Menu, User, Store, ChevronRight, Plus, MessageSquare, LogOut } from "lu
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { getActiveTenantSlug, userMatchesActiveTenant } from "@/lib/tenant";
+import OrderNotificationBell from "./OrderNotificationBell";
+import AdminUserDropdown from "./AdminUserDropdown";
 
 const AdminLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -45,7 +47,7 @@ const AdminLayout = () => {
         }, 0);
         setUnreadMessages(totalUnread);
       } catch (error) {
-        console.error("Error fetching unread messages:", error);
+        // Silently handle offline/missing chat endpoint
       }
     };
 
@@ -58,7 +60,7 @@ const AdminLayout = () => {
     try {
       await logout();
       toast.success("Successfully logged out");
-      navigate("/account/login");
+      window.location.href = "/account/login";
     } catch (error) {
       toast.error("Error logging out");
     }
@@ -74,7 +76,7 @@ const AdminLayout = () => {
           <div className="flex items-center gap-3 sm:gap-4">
             <button 
               onClick={() => setIsSidebarOpen(true)}
-              className="md:hidden p-2 hover:bg-accent rounded-xl transition-colors text-muted-foreground"
+              className="admin-mobile-toggle md:hidden p-2 hover:bg-accent rounded-xl transition-colors text-muted-foreground"
               aria-label="Toggle Menu"
             >
               <Menu size={22} />
@@ -93,31 +95,40 @@ const AdminLayout = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-1">
               <ModeToggle />
             </div>
+
+            {/* Order Activity Notification Bell */}
+            <OrderNotificationBell />
+
+            {/* Customer Chat Messages */}
             <Link
               to="/admin/messages"
-              className="relative p-2 text-muted-foreground hover:bg-accent rounded-xl transition-colors"
+              className="relative p-2 text-muted-foreground hover:bg-accent hover:text-foreground rounded-xl transition-colors"
+              title="Customer Messages"
+              aria-label="Customer Messages"
             >
               <MessageSquare size={20} />
               {unreadMessages > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-card">
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-card">
                   {unreadMessages > 9 ? "9+" : unreadMessages}
                 </span>
               )}
             </Link>
+
+            {/* Quick Add Product Button */}
             <Link
               to="/admin/products/add"
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 text-[10px] sm:text-xs font-bold uppercase tracking-wider"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/20 text-[10px] sm:text-xs font-bold uppercase tracking-wider shrink-0"
             >
               <Plus size={16} />
               <span className="hidden xs:inline">Add Product</span>
             </Link>
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-accent rounded-xl flex items-center justify-center text-muted-foreground border border-border shadow-sm">
-              <User size={18} />
-            </div>
+
+            {/* Admin Profile & Logout Dropdown */}
+            <AdminUserDropdown />
           </div>
         </header>
         

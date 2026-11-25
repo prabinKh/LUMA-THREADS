@@ -11,22 +11,88 @@ export type ProductSwatch = {
 };
 
 export type Product = {
+  id?: string | number;
   handle: string;
   title: string;
+  name?: string;
   colorway?: string;
   color?: string;
   price: number | string;
-  priceFormatted: string;
+  priceFormatted?: string;
   image?: string;
   hoverImage?: string;
-  images: string[];
+  images?: string[];
   badge?: string;
   description?: string;
   sizeAndFit?: string;
   care?: string;
-  sizes: string[];
-  details: string[];
+  sizes?: string[];
+  details?: string[];
   swatches?: ProductSwatch[];
+  category?: string;
+  categorySlug?: string;
+  category_name?: string;
+  category_slug?: string;
+  brand?: string;
+  brand_name?: string;
+  stock?: number;
+  is_active?: boolean;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type SubCategory = {
+  id?: string | number;
+  title?: string;
+  name?: string;
+  slug?: string;
+  handle?: string;
+  description?: string;
+  order?: number;
+};
+
+export type Category = {
+  id?: string | number;
+  title?: string;
+  name?: string;
+  slug?: string;
+  handle?: string;
+  icon?: string;
+  image?: string;
+  description?: string;
+  order?: number;
+  subcategories?: SubCategory[];
+  brands?: string[];
+  sections?: { title: string; items: { name: string; slug: string }[] }[];
+  updatedAt?: string;
+};
+
+export type Brand = {
+  id?: number | string;
+  name: string;
+  slug: string;
+  description?: string;
+  logo?: string;
+  categories?: any[];
+  category_ids?: string[];
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type Company = {
+  id?: string;
+  name: string;
+  slug: string;
+  theme_color?: string;
+  category?: string;
+  logo?: string;
+  description?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  website?: string;
 };
 
 export type Collection = {

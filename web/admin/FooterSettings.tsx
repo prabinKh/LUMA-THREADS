@@ -1,477 +1,824 @@
 import React, { useState, useEffect } from "react";
-import { 
-  Building2, 
-  Mail, 
-  Phone, 
-  Clock, 
-  MapPin, 
-  Save, 
-  Plus, 
-  Trash2, 
-  Eye, 
-  EyeOff
+import {
+  Save,
+  Plus,
+  Trash2,
+  ExternalLink,
+  RotateCcw,
+  Eye,
+  Mail,
+  Headphones,
+  Share2,
+  CreditCard,
+  ListTree,
+  Loader2,
+  Check,
 } from "lucide-react";
-
-const Facebook = ({ size = 16 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
-);
-const Twitter = ({ size = 16 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
-);
-const Instagram = ({ size = 16 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
-);
-const Youtube = ({ size = 16 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><polygon points="10 15 15 12 10 9 10 15"/></svg>
-);
-import axiosInstance from "@/api/axiosConfig";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
+import {
+  footerService,
+  type FooterSettingsData,
+  type FooterColumn,
+  type FooterLink,
+  DEFAULT_FRONTEND_FOOTER,
+} from "@/api/footerService";
 
-interface FooterSettingsData {
-  id?: number;
-  company_name: string;
-  email: string;
-  phone: string;
-  opening_hours_weekday: string;
-  opening_hours_weekend: string;
-  show_store_locations: boolean;
-  show_information: boolean;
-  show_policies: boolean;
-  show_customer_service: boolean;
-  location_title: string;
-  facebook_url: string;
-  twitter_url: string;
-  instagram_url: string;
-  linkedin_url: string;
-  youtube_url: string;
-}
+const AVAILABLE_PAYMENT_METHODS = [
+  "VISA",
+  "MC",
+  "AMEX",
+  "DISC",
+  "APPLE PAY",
+  "GOOGLE PAY",
+  "PAYPAL",
+  "KLARNA",
+  "AFTERPAY",
+  "SHOP PAY",
+  "ESEWA",
+  "KHALTI",
+];
 
-interface StoreLocation {
-  id?: number;
-  name: string;
-  address: string;
-  phone: string;
-  is_active: boolean;
-  order: number;
-}
-
-interface ApiError {
-  response?: {
-    data?: {
-      detail?: string | object;
-      error?: string;
-    };
-  };
-  message?: string;
-}
-
-const FooterSettings = () => {
-  const [settings, setSettings] = useState<FooterSettingsData>({
-    company_name: "",
-    email: "",
-    phone: "",
-    opening_hours_weekday: "",
-    opening_hours_weekend: "",
-    show_store_locations: true,
-    show_information: true,
-    show_policies: true,
-    show_customer_service: true,
-    location_title: "Our Store Locations",
-    facebook_url: "",
-    twitter_url: "",
-    instagram_url: "",
-    linkedin_url: "",
-    youtube_url: ""
-  });
-
-  const [locations, setLocations] = useState<StoreLocation[]>([]);
+export const FooterSettings = () => {
+  const [settings, setSettings] = useState<FooterSettingsData>(DEFAULT_FRONTEND_FOOTER);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<"newsletter" | "support" | "social" | "columns" | "bottom">("columns");
+  const [customBadgeInput, setCustomBadgeInput] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [settingsRes, locationsRes] = await Promise.all([
-          axiosInstance.get("/companies/footer/current/"),
-          axiosInstance.get("/companies/locations/")
-        ]);
-        
-        setSettings(settingsRes.data);
-        setLocations(locationsRes.data);
+        const data = await footerService.getSettings();
+        if (data) {
+          setSettings(data);
+        }
       } catch (error) {
-        console.error("Error fetching data:", error);
-        toast.error("Failed to load settings");
+        console.error("Error fetching footer settings:", error);
+        toast.error("Failed to load footer settings.");
       } finally {
         setLoading(false);
       }
     };
-    
     fetchData();
   }, []);
 
   const handleSaveSettings = async () => {
     setSaving(true);
     try {
-      await axiosInstance.patch("/companies/footer/current/", settings);
-      toast.success("Footer settings saved successfully");
-    } catch (error: unknown) {
-      console.error("Error saving settings:", error);
-      const err = error as ApiError;
-      let message = "Failed to save settings";
-      const detail = err.response?.data?.detail;
-      message = typeof detail === 'string' ? detail : 
-                (typeof detail === 'object' ? JSON.stringify(detail) : 
-                (err.response?.data?.error || "Failed to save settings"));
-      toast.error(message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleAddLocation = () => {
-    const newLoc: StoreLocation = {
-      name: "",
-      address: "",
-      phone: "",
-      is_active: true,
-      order: locations.length + 1
-    };
-    setLocations([...locations, newLoc]);
-  };
-
-  const handleUpdateLocationField = (index: number, field: keyof StoreLocation, value: string | number | boolean) => {
-    const newLocations = [...locations];
-    newLocations[index] = { ...newLocations[index], [field]: value };
-    setLocations(newLocations);
-  };
-
-  const handleRemoveLocation = async (index: number) => {
-    const location = locations[index];
-    if (location.id) {
-      try {
-        await axiosInstance.delete(`/companies/locations/${location.id}/`);
-        toast.success("Location removed");
-      } catch (error) {
-        toast.error("Failed to remove location");
-        return;
-      }
-    }
-    setLocations(locations.filter((_, i) => i !== index));
-  };
-
-  const handleSaveLocations = async () => {
-    setSaving(true);
-    try {
-      const promises = locations.map(loc => {
-        if (loc.id) {
-          return axiosInstance.put(`/companies/locations/${loc.id}/`, loc);
-        } else {
-          return axiosInstance.post("/companies/locations/", loc);
-        }
-      });
-      
-      const results = await Promise.all(promises);
-      setLocations(results.map(res => res.data));
-      toast.success("Locations saved successfully");
+      await footerService.updateSettings(settings);
+      toast.success("Footer settings saved & applied to frontend!");
     } catch (error) {
-      console.error("Error saving locations:", error);
-      toast.error("Failed to save some locations");
+      console.error("Error saving settings:", error);
+      toast.error("Failed to save footer settings to server.");
     } finally {
       setSaving(false);
     }
+  };
+
+  // COLUMN & LINK CRUD
+  const handleAddLink = (colIdx: number) => {
+    setSettings((prev) => {
+      const nextCols = [...prev.columns];
+      nextCols[colIdx] = {
+        ...nextCols[colIdx],
+        links: [...nextCols[colIdx].links, { label: "New Link", url: "/collections/all-denim" }],
+      };
+      return { ...prev, columns: nextCols };
+    });
+  };
+
+  const handleUpdateLink = (colIdx: number, linkIdx: number, field: keyof FooterLink, val: string) => {
+    setSettings((prev) => {
+      const nextCols = [...prev.columns];
+      const nextLinks = [...nextCols[colIdx].links];
+      nextLinks[linkIdx] = { ...nextLinks[linkIdx], [field]: val };
+      nextCols[colIdx] = { ...nextCols[colIdx], links: nextLinks };
+      return { ...prev, columns: nextCols };
+    });
+  };
+
+  const handleDeleteLink = (colIdx: number, linkIdx: number) => {
+    setSettings((prev) => {
+      const nextCols = [...prev.columns];
+      nextCols[colIdx] = {
+        ...nextCols[colIdx],
+        links: nextCols[colIdx].links.filter((_, i) => i !== linkIdx),
+      };
+      return { ...prev, columns: nextCols };
+    });
+  };
+
+  const handleUpdateColumnTitle = (colIdx: number, title: string) => {
+    setSettings((prev) => {
+      const nextCols = [...prev.columns];
+      nextCols[colIdx] = { ...nextCols[colIdx], title };
+      return { ...prev, columns: nextCols };
+    });
+  };
+
+  const handleToggleColumn = (colIdx: number) => {
+    setSettings((prev) => {
+      const nextCols = [...prev.columns];
+      nextCols[colIdx] = { ...nextCols[colIdx], enabled: !nextCols[colIdx].enabled };
+      return { ...prev, columns: nextCols };
+    });
+  };
+
+  const handleTogglePaymentBadge = (badge: string) => {
+    setSettings((prev) => {
+      const exists = prev.bottomBar.paymentBadges.includes(badge);
+      const nextBadges = exists
+        ? prev.bottomBar.paymentBadges.filter((b) => b !== badge)
+        : [...prev.bottomBar.paymentBadges, badge];
+      return {
+        ...prev,
+        bottomBar: {
+          ...prev.bottomBar,
+          paymentBadges: nextBadges,
+        },
+      };
+    });
+  };
+
+  const handleAddCustomBadge = () => {
+    const trimmed = customBadgeInput.trim().toUpperCase();
+    if (!trimmed) return;
+    if (!settings.bottomBar.paymentBadges.includes(trimmed)) {
+      setSettings((prev) => ({
+        ...prev,
+        bottomBar: {
+          ...prev.bottomBar,
+          paymentBadges: [...prev.bottomBar.paymentBadges, trimmed],
+        },
+      }));
+    }
+    setCustomBadgeInput("");
   };
 
   if (loading) {
-    return <div className="p-8 flex justify-center"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return (
-    <div className="p-4 lg:p-8 max-w-5xl mx-auto space-y-8 pb-20">
-      <div className="flex items-center justify-between">
+    <div className="w-full space-y-8 p-4 sm:p-6 lg:p-8 xl:p-10 min-h-screen max-w-[1600px] mx-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-border">
         <div>
-          <h1 className="text-2xl font-bold">Footer Settings</h1>
-          <p className="text-sm text-muted-foreground">Manage your storefront contact info and locations</p>
-        </div>
-        <Button onClick={handleSaveSettings} disabled={saving} className="gap-2">
-          {saving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={16} />}
-          Save Footer Settings
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Contact Info */}
-        <div className="space-y-6 bg-card border rounded-3xl p-6">
-          <div className="flex items-center gap-2 font-bold mb-4">
-            <Building2 size={18} className="text-primary" />
-            Basic Information
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+              Frontend Connected
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+              Footer Navigation & Content Settings
+            </h1>
           </div>
-          
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Company Display Name</Label>
-              <Input 
-                value={settings.company_name} 
-                onChange={e => setSettings({...settings, company_name: e.target.value})}
-                placeholder="e.g. Algoflow-E"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Support Email</Label>
-              <Input 
-                value={settings.email} 
-                onChange={e => setSettings({...settings, email: e.target.value})}
-                placeholder="contact@example.com"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Phone Number</Label>
-              <Input 
-                value={settings.phone} 
-                onChange={e => setSettings({...settings, phone: e.target.value})}
-                placeholder="9801200..."
-              />
-            </div>
-          </div>
-
-          <Separator className="my-6" />
-
-          <div className="flex items-center gap-2 font-bold mb-4">
-            <Clock size={18} className="text-primary" />
-            Opening Hours
-          </div>
-          
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Weekday Hours</Label>
-              <Input 
-                value={settings.opening_hours_weekday} 
-                onChange={e => setSettings({...settings, opening_hours_weekday: e.target.value})}
-                placeholder="Sun - Fri: 10AM - 7:30PM"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Weekend Hours</Label>
-              <Input 
-                value={settings.opening_hours_weekend} 
-                onChange={e => setSettings({...settings, opening_hours_weekend: e.target.value})}
-                placeholder="Saturday: 11AM - 6PM"
-              />
-            </div>
-          </div>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+            Customize the 4 columns, newsletter banner, support hours, social channels, and payment methods exactly matching the store frontend.
+          </p>
         </div>
 
-        {/* Social & Config */}
-        <div className="space-y-6 bg-card border rounded-3xl p-6">
-          <div className="flex items-center gap-2 font-bold mb-4">
-            <MapPin size={18} className="text-primary" />
-            General Settings
-          </div>
-          
-          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-2xl">
-            <div className="space-y-0.5">
-              <Label>Show Store Locations</Label>
-              <p className="text-xs text-muted-foreground">Toggle visibility of locations in footer</p>
-            </div>
-            <Switch 
-              checked={settings.show_store_locations}
-              onCheckedChange={checked => setSettings({...settings, show_store_locations: checked})}
-            />
-          </div>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={() => {
+              setSettings(DEFAULT_FRONTEND_FOOTER);
+              toast.info("Restored default frontend footer settings.");
+            }}
+            className="px-3.5 py-2 text-xs font-bold rounded-xl border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <RotateCcw size={13} />
+            <span>Reset Defaults</span>
+          </button>
 
-          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-2xl">
-            <div className="space-y-0.5">
-              <Label>Show Information</Label>
-              <p className="text-xs text-muted-foreground">Toggle Blog, About Us, Contact Us</p>
-            </div>
-            <Switch 
-              checked={settings.show_information}
-              onCheckedChange={checked => setSettings({...settings, show_information: checked})}
-            />
-          </div>
+          <a
+            href="/"
+            target="_blank"
+            rel="noreferrer"
+            className="px-3.5 py-2 text-xs font-bold rounded-xl border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
+          >
+            <ExternalLink size={13} />
+            <span className="hidden sm:inline">View Store</span>
+          </a>
 
-          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-2xl">
-            <div className="space-y-0.5">
-              <Label>Show Policies</Label>
-              <p className="text-xs text-muted-foreground">Toggle Privacy, Returns, Terms</p>
-            </div>
-            <Switch 
-              checked={settings.show_policies}
-              onCheckedChange={checked => setSettings({...settings, show_policies: checked})}
-            />
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-2xl">
-            <div className="space-y-0.5">
-              <Label>Show Customer Service</Label>
-              <p className="text-xs text-muted-foreground">Toggle Store, Service, Orders</p>
-            </div>
-            <Switch 
-              checked={settings.show_customer_service}
-              onCheckedChange={checked => setSettings({...settings, show_customer_service: checked})}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Locations Section Title</Label>
-            <Input 
-              value={settings.location_title} 
-              onChange={e => setSettings({...settings, location_title: e.target.value})}
-              placeholder="Our Store Locations"
-            />
-          </div>
-
-          <Separator className="my-6" />
-
-          <div className="font-bold mb-4">Social Media Links</div>
-          
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-blue-600/10 flex items-center justify-center text-blue-600">
-                <Facebook size={16} />
-              </div>
-              <Input 
-                value={settings.facebook_url} 
-                onChange={e => setSettings({...settings, facebook_url: e.target.value})}
-                placeholder="Facebook URL"
-              />
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-sky-500/10 flex items-center justify-center text-sky-500">
-                <Twitter size={16} />
-              </div>
-              <Input 
-                value={settings.twitter_url} 
-                onChange={e => setSettings({...settings, twitter_url: e.target.value})}
-                placeholder="Twitter URL"
-              />
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-pink-600/10 flex items-center justify-center text-pink-600">
-                <Instagram size={16} />
-              </div>
-              <Input 
-                value={settings.instagram_url} 
-                onChange={e => setSettings({...settings, instagram_url: e.target.value})}
-                placeholder="Instagram URL"
-              />
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-red-600/10 flex items-center justify-center text-red-600">
-                <Youtube size={16} />
-              </div>
-              <Input 
-                value={settings.youtube_url} 
-                onChange={e => setSettings({...settings, youtube_url: e.target.value})}
-                placeholder="YouTube URL"
-              />
-            </div>
-          </div>
+          <button
+            onClick={handleSaveSettings}
+            disabled={saving}
+            className="flex-1 sm:flex-none px-6 py-2.5 bg-foreground text-background hover:opacity-90 font-bold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save size={16} />}
+            <span>{saving ? "Saving..." : "Save Footer"}</span>
+          </button>
         </div>
       </div>
 
-      {/* Store Locations List */}
-      <div className="bg-card border rounded-3xl p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2 font-bold">
-            <MapPin size={18} className="text-primary" />
-            Manage Store Locations
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleAddLocation} className="gap-2">
-              <Plus size={14} /> Add Location
-            </Button>
-            <Button size="sm" onClick={handleSaveLocations} disabled={saving} className="gap-2">
-              {saving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={14} />}
-              Save Locations
-            </Button>
-          </div>
-        </div>
+      {/* Navigation Tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-border scrollbar-none">
+        {[
+          { id: "columns", label: "Navigation Columns (Shop, About, Help)", icon: ListTree },
+          { id: "newsletter", label: "Stay in the Know (Newsletter)", icon: Mail },
+          { id: "support", label: "Customer Support & Hours", icon: Headphones },
+          { id: "social", label: "Social Media Links", icon: Share2 },
+          { id: "bottom", label: "Copyright & Payment Badges", icon: CreditCard },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
+                isActive
+                  ? "bg-foreground text-background shadow-xs font-black"
+                  : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Icon size={14} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {locations.map((loc, index) => (
-            <div key={index} className="relative group border rounded-2xl p-4 bg-muted/20 hover:border-primary/50 transition-colors">
-              <button 
-                onClick={() => handleRemoveLocation(index)}
-                className="absolute top-2 right-2 p-1.5 text-muted-foreground hover:text-red-500 bg-card rounded-lg opacity-0 group-hover:opacity-100 transition-opacity border"
-              >
-                <Trash2 size={12} />
-              </button>
-              
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <Label className="text-[10px] uppercase text-muted-foreground">Location Name</Label>
-                  <Input 
-                    value={loc.name} 
-                    onChange={e => handleUpdateLocationField(index, "name", e.target.value)}
-                    placeholder="e.g. Kathmandu"
-                    className="h-8 text-sm"
-                  />
-                </div>
-                
-                <div className="space-y-1">
-                  <Label className="text-[10px] uppercase text-muted-foreground">Full Address</Label>
-                  <textarea 
-                    value={loc.address} 
-                    onChange={e => handleUpdateLocationField(index, "address", e.target.value)}
-                    placeholder="Street, City, Near..."
-                    className="w-full bg-background border rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary min-h-[60px]"
-                  />
-                </div>
-                
-                <div className="space-y-1">
-                  <Label className="text-[10px] uppercase text-muted-foreground">Contact Number</Label>
-                  <Input 
-                    value={loc.phone} 
-                    onChange={e => handleUpdateLocationField(index, "phone", e.target.value)}
-                    placeholder="Phone"
-                    className="h-8 text-sm"
-                  />
-                </div>
+      {/* Main Content Areas */}
+      <div className="space-y-6">
+        {/* TAB 1: NAVIGATION COLUMNS */}
+        {activeTab === "columns" && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {settings.columns.map((col, colIdx) => (
+                <div
+                  key={col.id || colIdx}
+                  className="bg-card border border-border rounded-2xl p-5 space-y-4 shadow-xs"
+                >
+                  <div className="flex items-center justify-between pb-3 border-b border-border">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-5 bg-blue-600 rounded-sm" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        Column #{colIdx + 1}
+                      </span>
+                    </div>
 
-                <div className="flex items-center justify-between pt-2">
-                  <div className="flex items-center gap-2">
-                    <Label className="text-[10px] uppercase text-muted-foreground">Active</Label>
-                    <Switch 
-                      checked={loc.is_active}
-                      onCheckedChange={checked => handleUpdateLocationField(index, "is_active", checked)}
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={col.enabled}
+                        onChange={() => handleToggleColumn(colIdx)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-8 h-4 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
+                      <span className="ml-1.5 text-[11px] font-bold text-foreground">
+                        {col.enabled ? "Visible" : "Hidden"}
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Column Title Input */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Column Heading Title
+                    </label>
+                    <input
+                      type="text"
+                      value={col.title}
+                      onChange={(e) => handleUpdateColumnTitle(colIdx, e.target.value)}
+                      placeholder="e.g. SHOP, ABOUT, HELP"
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs font-bold uppercase tracking-wider outline-none focus:border-blue-500"
                     />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-[10px] uppercase text-muted-foreground">Order</Label>
-                    <Input 
-                      type="number"
-                      value={loc.order} 
-                      onChange={e => handleUpdateLocationField(index, "order", parseInt(e.target.value))}
-                      className="h-7 w-12 text-center"
-                    />
+
+                  {/* Links List */}
+                  <div className="space-y-2.5 pt-2 border-t border-border/60">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                        Navigation Links ({col.links.length})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleAddLink(colIdx)}
+                        className="text-[11px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Plus size={12} />
+                        <span>Add Link</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      {col.links.map((link, linkIdx) => (
+                        <div
+                          key={linkIdx}
+                          className="p-2.5 bg-muted/40 border border-border rounded-xl space-y-1.5"
+                        >
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={link.label}
+                              onChange={(e) =>
+                                handleUpdateLink(colIdx, linkIdx, "label", e.target.value)
+                              }
+                              placeholder="Label (e.g. All Denim)"
+                              className="flex-1 px-2.5 py-1.5 bg-background border border-border rounded-lg text-xs font-semibold outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteLink(colIdx, linkIdx)}
+                              className="p-1.5 text-muted-foreground hover:text-rose-500 transition-colors cursor-pointer"
+                              title="Delete Link"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            value={link.url}
+                            onChange={(e) =>
+                              handleUpdateLink(colIdx, linkIdx, "url", e.target.value)
+                            }
+                            placeholder="URL (e.g. /collections/all-denim)"
+                            className="w-full px-2.5 py-1.5 bg-background border border-border rounded-lg text-[11px] font-mono outline-none text-muted-foreground focus:text-foreground"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: NEWSLETTER */}
+        {activeTab === "newsletter" && (
+          <div className="bg-card border border-border rounded-2xl p-6 space-y-5 max-w-3xl">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-6 bg-amber-500 rounded-sm" />
+                <h2 className="text-base font-bold text-foreground">Stay In The Know (Newsletter Block)</h2>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.newsletter.enabled}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      newsletter: { ...prev.newsletter, enabled: e.target.checked },
+                    }))
+                  }
+                  className="sr-only peer"
+                />
+                <div className="w-10 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                <span className="ml-2 text-xs font-bold text-foreground">
+                  {settings.newsletter.enabled ? "Enabled" : "Disabled"}
+                </span>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Newsletter Title
+                </label>
+                <input
+                  type="text"
+                  value={settings.newsletter.title}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      newsletter: { ...prev.newsletter, title: e.target.value },
+                    }))
+                  }
+                  placeholder="STAY IN THE KNOW"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-xs font-bold"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Input Placeholder
+                </label>
+                <input
+                  type="text"
+                  value={settings.newsletter.placeholder}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      newsletter: { ...prev.newsletter, placeholder: e.target.value },
+                    }))
+                  }
+                  placeholder="Enter your email"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-xs"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Submit Button Label
+                </label>
+                <input
+                  type="text"
+                  value={settings.newsletter.buttonText}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      newsletter: { ...prev.newsletter, buttonText: e.target.value },
+                    }))
+                  }
+                  placeholder="→"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-xs font-bold"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Success Message (Alert)
+                </label>
+                <input
+                  type="text"
+                  value={settings.newsletter.successMessage}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      newsletter: { ...prev.newsletter, successMessage: e.target.value },
+                    }))
+                  }
+                  placeholder="Thank you for subscribing to Luma Threads!"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-xs"
+                />
               </div>
             </div>
-          ))}
-          
-          {locations.length === 0 && (
-            <div className="col-span-full py-12 flex flex-col items-center justify-center text-muted-foreground bg-muted/10 border border-dashed rounded-3xl">
-              <MapPin size={32} className="mb-2 opacity-20" />
-              <p>No locations added yet.</p>
-              <Button variant="link" onClick={handleAddLocation}>Click here to add your first location</Button>
+          </div>
+        )}
+
+        {/* TAB 3: CUSTOMER SUPPORT & HOURS */}
+        {activeTab === "support" && (
+          <div className="bg-card border border-border rounded-2xl p-6 space-y-5 max-w-3xl">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-6 bg-emerald-500 rounded-sm" />
+                <h2 className="text-base font-bold text-foreground">Customer Support Details & Hours</h2>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.customerSupport.enabled}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      customerSupport: { ...prev.customerSupport, enabled: e.target.checked },
+                    }))
+                  }
+                  className="sr-only peer"
+                />
+                <div className="w-10 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                <span className="ml-2 text-xs font-bold text-foreground">
+                  {settings.customerSupport.enabled ? "Enabled" : "Disabled"}
+                </span>
+              </label>
             </div>
-          )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Section Heading
+                </label>
+                <input
+                  type="text"
+                  value={settings.customerSupport.heading}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      customerSupport: { ...prev.customerSupport, heading: e.target.value },
+                    }))
+                  }
+                  placeholder="CUSTOMER SUPPORT"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-xs font-bold"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Support Email
+                </label>
+                <input
+                  type="email"
+                  value={settings.customerSupport.email}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      customerSupport: { ...prev.customerSupport, email: e.target.value },
+                    }))
+                  }
+                  placeholder="customerservice@lumathreads.com"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-xs font-mono"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Hours of Operation
+                </label>
+                <input
+                  type="text"
+                  value={settings.customerSupport.hours}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      customerSupport: { ...prev.customerSupport, hours: e.target.value },
+                    }))
+                  }
+                  placeholder="Monday – Friday 8AM – 5PM PST"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-xs"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Phone (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={settings.customerSupport.phone || ""}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      customerSupport: { ...prev.customerSupport, phone: e.target.value },
+                    }))
+                  }
+                  placeholder="+1 (800) 586-2847"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-xs font-mono"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: SOCIAL MEDIA LINKS */}
+        {activeTab === "social" && (
+          <div className="bg-card border border-border rounded-2xl p-6 space-y-5 max-w-3xl">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-6 bg-pink-500 rounded-sm" />
+                <h2 className="text-base font-bold text-foreground">Social Media Channels</h2>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.social.enabled}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      social: { ...prev.social, enabled: e.target.checked },
+                    }))
+                  }
+                  className="sr-only peer"
+                />
+                <div className="w-10 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-pink-500"></div>
+                <span className="ml-2 text-xs font-bold text-foreground">
+                  {settings.social.enabled ? "Visible" : "Hidden"}
+                </span>
+              </label>
+            </div>
+
+            <div className="space-y-3">
+              {[
+                { key: "facebook", label: "Facebook URL", placeholder: "https://www.facebook.com/..." },
+                { key: "instagram", label: "Instagram URL", placeholder: "https://www.instagram.com/..." },
+                { key: "twitter", label: "Twitter / X URL", placeholder: "https://twitter.com/..." },
+                { key: "pinterest", label: "Pinterest URL", placeholder: "https://www.pinterest.com/..." },
+                { key: "tiktok", label: "TikTok URL", placeholder: "https://www.tiktok.com/@..." },
+                { key: "youtube", label: "YouTube URL", placeholder: "https://www.youtube.com/..." },
+              ].map((s) => (
+                <div key={s.key} className="space-y-1">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    {s.label}
+                  </label>
+                  <input
+                    type="text"
+                    value={(settings.social as any)[s.key] || ""}
+                    onChange={(e) =>
+                      setSettings((prev) => ({
+                        ...prev,
+                        social: { ...prev.social, [s.key]: e.target.value },
+                      }))
+                    }
+                    placeholder={s.placeholder}
+                    className="w-full px-3.5 py-2 rounded-xl border border-border bg-background text-xs font-mono"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 5: BOTTOM BAR & PAYMENT BADGES */}
+        {activeTab === "bottom" && (
+          <div className="bg-card border border-border rounded-2xl p-6 space-y-6 max-w-3xl">
+            <div className="pb-3 border-b border-border">
+              <h2 className="text-base font-bold text-foreground">Copyright Notice & Payment Badges</h2>
+            </div>
+
+            {/* Copyright */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Copyright Notice Text
+              </label>
+              <input
+                type="text"
+                value={settings.bottomBar.copyright}
+                onChange={(e) =>
+                  setSettings((prev) => ({
+                    ...prev,
+                    bottomBar: { ...prev.bottomBar, copyright: e.target.value },
+                  }))
+                }
+                placeholder="© 2026, Luma Threads. All rights reserved."
+                className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-xs font-medium"
+              />
+            </div>
+
+            {/* Payment Badges Selector */}
+            <div className="space-y-3 pt-3 border-t border-border">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
+                    Supported Payment Method Badges
+                  </label>
+                  <span className="text-[11px] text-muted-foreground">
+                    Click to toggle payment icons shown in the footer bottom bar.
+                  </span>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.bottomBar.showPaymentBadges}
+                    onChange={(e) =>
+                      setSettings((prev) => ({
+                        ...prev,
+                        bottomBar: { ...prev.bottomBar, showPaymentBadges: e.target.checked },
+                      }))
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-10 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                  <span className="ml-2 text-xs font-bold text-foreground">
+                    {settings.bottomBar.showPaymentBadges ? "Shown" : "Hidden"}
+                  </span>
+                </label>
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-1">
+                {AVAILABLE_PAYMENT_METHODS.map((badge) => {
+                  const isSelected = settings.bottomBar.paymentBadges.includes(badge);
+                  return (
+                    <button
+                      key={badge}
+                      type="button"
+                      onClick={() => handleTogglePaymentBadge(badge)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 cursor-pointer ${
+                        isSelected
+                          ? "bg-foreground text-background border-foreground font-black shadow-xs"
+                          : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {isSelected && <Check size={12} className="stroke-[3]" />}
+                      <span>{badge}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Custom Badge Input */}
+              <div className="flex items-center gap-2 pt-2">
+                <input
+                  type="text"
+                  value={customBadgeInput}
+                  onChange={(e) => setCustomBadgeInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddCustomBadge();
+                    }
+                  }}
+                  placeholder="Add custom payment provider (e.g. VENMO, BITCOIN)..."
+                  className="flex-1 px-3 py-1.5 rounded-xl border border-border bg-background text-xs uppercase"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCustomBadge}
+                  className="px-4 py-1.5 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 cursor-pointer"
+                >
+                  + Add Badge
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* LIVE FRONTEND FOOTER PREVIEW */}
+        <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-border">
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <Eye size={15} className="text-emerald-500" />
+              Live Frontend Footer Preview
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              Renders with frontend Shopify-standard typography and column layout
+            </span>
+          </div>
+
+          {/* Mimic Frontend Footer Container */}
+          <div className="bg-neutral-900 text-white p-6 sm:p-10 rounded-2xl border border-neutral-800 space-y-10">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              {/* Column 1: Newsletter & Support */}
+              <div className="space-y-6">
+                {settings.newsletter.enabled && (
+                  <div>
+                    <p className="text-xs font-bold tracking-[2px] uppercase text-neutral-300 mb-3">
+                      {settings.newsletter.title}
+                    </p>
+                    <div className="flex max-w-xs border-b border-neutral-500 pb-1">
+                      <input
+                        type="email"
+                        disabled
+                        placeholder={settings.newsletter.placeholder}
+                        className="bg-transparent text-xs text-white placeholder-neutral-500 outline-none flex-1"
+                      />
+                      <span className="text-neutral-400 font-bold">
+                        {settings.newsletter.buttonText}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {settings.customerSupport.enabled && (
+                  <div className="text-xs text-neutral-400 space-y-1 leading-relaxed">
+                    <p className="font-bold text-white tracking-wider">
+                      {settings.customerSupport.heading}
+                    </p>
+                    <p>
+                      Email: <span className="text-white underline">{settings.customerSupport.email}</span>
+                    </p>
+                    <p>Hours: {settings.customerSupport.hours}</p>
+                    {settings.customerSupport.phone && <p>Tel: {settings.customerSupport.phone}</p>}
+                  </div>
+                )}
+
+                {settings.social.enabled && (
+                  <div className="flex gap-3 text-neutral-400 text-xs">
+                    {settings.social.facebook && <span>Facebook</span>}
+                    {settings.social.instagram && <span>Instagram</span>}
+                    {settings.social.twitter && <span>Twitter</span>}
+                    {settings.social.pinterest && <span>Pinterest</span>}
+                  </div>
+                )}
+              </div>
+
+              {/* Navigation Columns (Col 2, 3, 4) */}
+              {settings.columns.map((col, idx) => {
+                if (!col.enabled) return null;
+                return (
+                  <div key={idx} className="space-y-3">
+                    <p className="text-xs font-bold tracking-[2px] uppercase text-neutral-200">
+                      {col.title}
+                    </p>
+                    <ul className="space-y-2 text-xs text-neutral-400">
+                      {col.links.map((link, lIdx) => (
+                        <li key={lIdx} className="hover:text-white transition-colors">
+                          {link.label}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Bottom Bar Preview */}
+            <div className="pt-6 border-t border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500">
+              <small>{settings.bottomBar.copyright}</small>
+              {settings.bottomBar.showPaymentBadges && (
+                <div className="flex flex-wrap gap-2">
+                  {settings.bottomBar.paymentBadges.map((badge) => (
+                    <span
+                      key={badge}
+                      className="px-2 py-0.5 border border-neutral-700 rounded text-[10px] text-neutral-400"
+                    >
+                      {badge}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 };
-
 export default FooterSettings;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, 
@@ -15,9 +15,12 @@ import {
   ChevronDown,
   BarChart3,
   Wrench,
-  MessageSquare
+  MessageSquare,
+  Tag,
+  Layers
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useAdminCounts } from "@/hooks/useAdminCounts";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -30,12 +33,28 @@ interface MenuItem {
   label: string;
   path: string;
   icon?: React.ElementType;
+  badge?: number | string;
+  badgeColor?: string;
   children?: MenuItem[];
 }
 
 const SidebarContent = ({ onClose }: { onClose?: () => void }) => {
   const location = useLocation();
   const [openMenus, setOpenMenus] = useState<string[]>([]);
+  const {
+    attentionOrdersCount,
+    totalOrders,
+    newOrdersCount,
+    pendingOrdersCount,
+    processingOrdersCount,
+    shippedOrdersCount,
+    deliveredOrdersCount,
+    conformOrdersCount,
+    cancelledOrdersCount,
+    dontConformOrdersCount,
+    productsCount,
+    customersCount,
+  } = useAdminCounts();
 
   const toggleMenu = (label: string) => {
     setOpenMenus(prev => 
@@ -50,33 +69,50 @@ const SidebarContent = ({ onClose }: { onClose?: () => void }) => {
     isActive(child.path) || (child.children && isParentActive(child.children))
   );
 
-  const menuItems: MenuItem[] = [
+  const menuItems: MenuItem[] = useMemo(() => [
     { icon: LayoutDashboard, label: "Overview", path: "/admin" },
     { 
       icon: ShoppingCart, 
       label: "Orders", 
       path: "/admin/orders",
+      badge: attentionOrdersCount > 0 ? `${attentionOrdersCount} new` : (totalOrders > 0 ? totalOrders : undefined),
+      badgeColor: attentionOrdersCount > 0 ? "bg-amber-500 text-white shadow-sm" : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
       children: [
-        { label: "New Orders", path: "/admin/orders" },
-        { label: "Pending", path: "/admin/orders/pending" },
-        { label: "Processing", path: "/admin/orders/processing" },
-        { label: "Shipped", path: "/admin/orders/shipped" },
-        { label: "Delivered", path: "/admin/orders/delivered" },
-        { label: "PC (Process Conform)", path: "/admin/orders/process-conform" },
-        { label: "Cancelled", path: "/admin/orders/cancelled" },
-        { label: "PDC (Don't Conform)", path: "/admin/orders/process-dont-conform" },
+        { 
+          label: "New Orders", 
+          path: "/admin/orders", 
+          badge: newOrdersCount > 0 ? newOrdersCount : (totalOrders > 0 ? totalOrders : 0),
+          badgeColor: "bg-emerald-500 text-white font-bold shadow-sm"
+        },
+        { label: "Pending", path: "/admin/orders/pending", badge: pendingOrdersCount > 0 ? pendingOrdersCount : undefined, badgeColor: "bg-amber-500/20 text-amber-700 dark:text-amber-300" },
+        { label: "Processing", path: "/admin/orders/processing", badge: processingOrdersCount > 0 ? processingOrdersCount : undefined, badgeColor: "bg-blue-500/20 text-blue-700 dark:text-blue-300" },
+        { label: "Shipped", path: "/admin/orders/shipped", badge: shippedOrdersCount > 0 ? shippedOrdersCount : undefined },
+        { label: "Delivered", path: "/admin/orders/delivered", badge: deliveredOrdersCount > 0 ? deliveredOrdersCount : undefined },
+        { label: "PC (Process Conform)", path: "/admin/orders/process-conform", badge: conformOrdersCount > 0 ? conformOrdersCount : undefined },
+        { label: "Cancelled", path: "/admin/orders/cancelled", badge: cancelledOrdersCount > 0 ? cancelledOrdersCount : undefined },
+        { label: "PDC (Don't Conform)", path: "/admin/orders/process-dont-conform", badge: dontConformOrdersCount > 0 ? dontConformOrdersCount : undefined },
       ]
     },
     { 
       icon: Package, 
       label: "Products", 
       path: "/admin/products",
+      badge: productsCount > 0 ? productsCount : undefined,
+      badgeColor: "bg-muted text-muted-foreground",
       children: [
-        { label: "All Products", path: "/admin/products" },
+        { label: "All Products", path: "/admin/products", badge: productsCount > 0 ? productsCount : undefined },
         { label: "Add Product", path: "/admin/products/add" },
       ]
     },
-    { icon: Users, label: "Customers", path: "/admin/customers" },
+    { icon: Tag, label: "Brands", path: "/admin/brands" },
+    { icon: Layers, label: "Categories", path: "/admin/categories" },
+    { 
+      icon: Users, 
+      label: "Customers", 
+      path: "/admin/customers",
+      badge: customersCount > 0 ? customersCount : undefined,
+      badgeColor: "bg-muted text-muted-foreground"
+    },
     { 
       icon: Wrench, 
       label: "Service Center", 
@@ -144,7 +180,20 @@ const SidebarContent = ({ onClose }: { onClose?: () => void }) => {
         { label: "Stock Reports", path: "/admin/reports/stock" },
       ]
     },
-  ];
+  ], [
+    attentionOrdersCount,
+    totalOrders,
+    newOrdersCount,
+    pendingOrdersCount,
+    processingOrdersCount,
+    shippedOrdersCount,
+    deliveredOrdersCount,
+    conformOrdersCount,
+    cancelledOrdersCount,
+    dontConformOrdersCount,
+    productsCount,
+    customersCount,
+  ]);
 
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -153,7 +202,7 @@ const SidebarContent = ({ onClose }: { onClose?: () => void }) => {
     try {
       await logout();
       toast.success("Logged out successfully");
-      navigate("/account/login");
+      window.location.href = "/account/login";
     } catch (error) {
       toast.error("Failed to logout");
     }
@@ -163,15 +212,15 @@ const SidebarContent = ({ onClose }: { onClose?: () => void }) => {
     <div className="flex flex-col h-full bg-card border-r border-border w-64 lg:w-72">
       <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
         <div className="flex items-center justify-between mb-8">
-          <Link to="/" className="flex items-center gap-3 group" onClick={onClose}>
+          <a href="/" className="flex items-center gap-3 group" onClick={onClose}>
             <div className="relative flex items-center justify-center w-10 h-10 bg-emerald-500 rounded-xl shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform duration-300">
               <Store size={20} className="text-white" />
             </div>
             <div className="flex flex-col -space-y-1">
               <span className="font-black text-xl tracking-tighter text-foreground">LUMA<span className="text-emerald-500">Threads</span></span>
-              <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Admin Portal</span>
+              <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Storefront & Admin</span>
             </div>
-          </Link>
+          </a>
           {onClose && (
             <button onClick={onClose} className="md:hidden p-2 hover:bg-accent rounded-xl text-muted-foreground transition-colors" aria-label="Close Sidebar">
               <X size={20} />
@@ -196,10 +245,17 @@ const SidebarContent = ({ onClose }: { onClose?: () => void }) => {
                       <item.icon size={18} />
                       <span className="text-sm font-medium">{item.label}</span>
                     </div>
-                    <ChevronDown 
-                      size={14} 
-                      className={`transition-transform duration-200 ${openMenus.includes(item.label) ? "rotate-180" : ""}`} 
-                    />
+                    <div className="flex items-center gap-2">
+                      {item.badge !== undefined && item.badge !== 0 && (
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider ${item.badgeColor || "bg-accent text-foreground"}`}>
+                          {item.badge}
+                        </span>
+                      )}
+                      <ChevronDown 
+                        size={14} 
+                        className={`transition-transform duration-200 ${openMenus.includes(item.label) ? "rotate-180" : ""}`} 
+                      />
+                    </div>
                   </button>
                   <AnimatePresence>
                     {(openMenus.includes(item.label) || isParentActive(item.children)) && (
@@ -260,13 +316,18 @@ const SidebarContent = ({ onClose }: { onClose?: () => void }) => {
                                 <Link
                                   to={child.path}
                                   onClick={onClose}
-                                  className={`flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                                  className={`flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                                     isActive(child.path)
                                       ? "text-emerald-500 bg-emerald-500/10"
                                       : "text-muted-foreground hover:text-foreground hover:bg-accent"
                                   }`}
                                 >
-                                  {child.label}
+                                  <span>{child.label}</span>
+                                  {child.badge !== undefined && child.badge !== 0 && (
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${child.badgeColor || "bg-accent text-foreground"}`}>
+                                      {child.badge}
+                                    </span>
+                                  )}
                                 </Link>
                               )}
                             </div>
@@ -290,7 +351,14 @@ const SidebarContent = ({ onClose }: { onClose?: () => void }) => {
                     <item.icon size={18} />
                     <span className="text-sm font-medium">{item.label}</span>
                   </div>
-                  {isActive(item.path) && <ChevronRight size={14} />}
+                  <div className="flex items-center gap-2">
+                    {item.badge !== undefined && item.badge !== 0 && (
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider ${item.badgeColor || "bg-accent text-foreground"}`}>
+                        {item.badge}
+                      </span>
+                    )}
+                    {isActive(item.path) && <ChevronRight size={14} />}
+                  </div>
                 </Link>
               )}
             </div>
@@ -315,7 +383,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   return (
     <>
       {/* Desktop & Tablet Sidebar (Visible on all md+ screens >= 768px) */}
-      <aside className="hidden md:block h-screen sticky top-0 flex-shrink-0 w-64 lg:w-72 bg-card border-r border-border z-30">
+      <aside className="admin-sidebar-desktop h-screen sticky top-0 flex-shrink-0 w-64 lg:w-72 bg-card border-r border-border z-30">
         <SidebarContent onClose={onClose} />
       </aside>
 

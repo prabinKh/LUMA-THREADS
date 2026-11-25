@@ -147,7 +147,7 @@ const CompanySettings: React.FC = () => {
   };
 
   return (
-    <div className="p-4 sm:p-8 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 xl:p-10 w-full min-h-screen">
       <div className="mb-8 gsap-reveal">
         <h1 className="text-3xl font-black tracking-tight text-foreground flex items-center gap-3">
           <Store className="text-primary" size={32} />

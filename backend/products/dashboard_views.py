@@ -1,5 +1,9 @@
+import os
+import uuid
+import datetime
 import json
 from decimal import Decimal
+from django.conf import settings
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -234,11 +238,27 @@ def api_product_create(request):
 
     images = data.get("images", [])
     primary_img = data.get("image") or (images[0] if isinstance(images, list) and images else "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=600&q=80")
-    hover_img = data.get("hover_image") or (images[1] if isinstance(images, list) and len(images) > 1 else primary_img)
+    hover_img = data.get("hover_image") or data.get("hoverImage") or (images[1] if isinstance(images, list) and len(images) > 1 else primary_img)
+
+    gallery_imgs = images if isinstance(images, list) and images else []
+    if primary_img and primary_img not in gallery_imgs:
+        gallery_imgs.insert(0, primary_img)
+    if hover_img and hover_img not in gallery_imgs and hover_img != primary_img:
+        gallery_imgs.append(hover_img)
 
     sizes = data.get("sizes", ["XS", "S", "M", "L"])
     if isinstance(sizes, str):
         sizes = [s.strip() for s in sizes.split(",") if s.strip()]
+
+    details_val = data.get("details", [])
+    if isinstance(details_val, str):
+        details_val = [d.strip() for d in details_val.split("\n") if d.strip()]
+    elif not isinstance(details_val, list):
+        details_val = []
+
+    brand_val = data.get("brand_name") or data.get("brand") or ""
+    if brand_val and isinstance(brand_val, str) and not any(str(d).lower().startswith("brand:") for d in details_val):
+        details_val.insert(0, f"Brand: {brand_val}")
 
     prod = Product.objects.create(
         title=title,
@@ -257,13 +277,51 @@ def api_product_create(request):
         color=data.get("color", "default"),
         image=primary_img,
         hover_image=hover_img,
-        is_active=True,
+        images=gallery_imgs,
+        size_and_fit=data.get("size_and_fit", "") or data.get("sizeAndFit", ""),
+        care=data.get("care", ""),
+        details=details_val,
+        is_featured=bool(data.get("is_featured", False)),
+        is_active=bool(data.get("is_active", True)),
     )
+
+    collections_data = data.get("collections", [])
+    if isinstance(collections_data, list) and collections_data:
+        for c_item in collections_data:
+            c_obj = None
+            if str(c_item).isdigit():
+                c_obj = Collection.objects.filter(id=c_item).first()
+            if not c_obj:
+                c_obj = Collection.objects.filter(Q(handle=str(c_item)) | Q(title__iexact=str(c_item))).first()
+            if c_obj:
+                prod.collections.add(c_obj)
 
     # Attach colors if provided
     color_variants_data = data.get("color_variants")
     swatches_list = []
     if isinstance(color_variants_data, list) and len(color_variants_data) > 0:
+        # First colorway dictates the root product defaults
+        first_cv = color_variants_data[0]
+        first_price = Decimal(str(first_cv.get("price") or price))
+        first_img = first_cv.get("primary_image") or primary_img
+        first_hover = first_cv.get("hover_image") or hover_img
+        first_sizes = first_cv.get("sizes") or sizes
+        if isinstance(first_sizes, str):
+            first_sizes = [s.strip() for s in first_sizes.split(",") if s.strip()]
+        first_name = first_cv.get("color_name") or "Default"
+        first_hex = first_cv.get("color_hex") or "#000000"
+        first_desc = first_cv.get("description")
+
+        prod.price = first_price
+        prod.price_formatted = f"${float(first_price):.2f}"
+        prod.image = first_img
+        prod.hover_image = first_hover
+        prod.sizes = first_sizes
+        prod.colorway = first_name
+        prod.color = first_hex
+        if first_desc:
+            prod.description = first_desc
+
         for cv in color_variants_data:
             c_name = cv.get("color_name") or "Default"
             c_hex = cv.get("color_hex") or "#000000"
@@ -271,6 +329,7 @@ def api_product_create(request):
             h_img = cv.get("hover_image") or prod.hover_image
             c_price = Decimal(str(cv.get("price") or prod.price))
             c_sizes = cv.get("sizes") or prod.sizes
+            c_desc = cv.get("description") or prod.description
             if isinstance(c_sizes, str):
                 c_sizes = [s.strip() for s in c_sizes.split(",") if s.strip()]
 
@@ -285,6 +344,12 @@ def api_product_create(request):
                 price=c_price,
                 sizes=c_sizes
             )
+            c_descriptions = cv.get("descriptions")
+            if not c_descriptions and c_desc:
+                c_descriptions = [c_desc]
+            elif not c_descriptions:
+                c_descriptions = []
+
             swatches_list.append({
                 "name": c_name,
                 "color": c_hex,
@@ -293,7 +358,9 @@ def api_product_create(request):
                 "hoverImage": h_img,
                 "price": float(c_price),
                 "priceFormatted": f"${float(c_price):.2f}",
-                "sizes": c_sizes
+                "sizes": c_sizes,
+                "description": c_desc or (c_descriptions[0] if c_descriptions else ""),
+                "descriptions": c_descriptions,
             })
             for sz in c_sizes:
                 sku = f"{prod.handle[:8]}-{pcolor.id}-{sz}".upper()
@@ -338,8 +405,16 @@ def api_product_create(request):
         "success": True,
         "message": f"Product '{prod.title}' created successfully!",
         "product_id": prod.id,
-        "handle": prod.handle
-    })
+        "id": prod.id,
+        "handle": prod.handle,
+        "slug": prod.handle,
+        "title": prod.title,
+        "name": prod.title,
+        "price": float(prod.price),
+        "category": prod.category.title if prod.category else "Uncategorized",
+        "category_id": prod.category_id,
+        "image": prod.image,
+    }, status=201)
 
 
 @csrf_exempt
@@ -449,6 +524,8 @@ def api_product_detail(request, handle_or_id):
                         "sizes": c_sizes,
                     }
                 )
+                cv_desc = cv_data.get("description", "")
+                cv_descs = cv_data.get("descriptions") or ([cv_desc] if cv_desc else [])
                 swatches_list.append({
                     "name": c_name,
                     "color": c_hex,
@@ -459,6 +536,8 @@ def api_product_detail(request, handle_or_id):
                     "price": float(c_price),
                     "priceFormatted": f"${float(c_price):.2f}",
                     "sizes": c_sizes,
+                    "description": cv_desc or (cv_descs[0] if cv_descs else ""),
+                    "descriptions": cv_descs,
                 })
 
             if swatches_list:
@@ -491,7 +570,10 @@ def api_add_category(request):
         return JsonResponse({"error": "Title is required"}, status=400)
 
     if parent_category_id:
-        parent_cat = get_object_or_404(Category, id=parent_category_id)
+        if str(parent_category_id).isdigit():
+            parent_cat = get_object_or_404(Category, id=int(parent_category_id))
+        else:
+            parent_cat = get_object_or_404(Category, handle=str(parent_category_id))
         if order_val is not None and str(order_val).strip() != "":
             try:
                 order = int(order_val)
@@ -575,10 +657,15 @@ def api_update_category_order(request):
 
 @csrf_exempt
 def api_delete_category(request, category_id):
-    """Delete a Category."""
+    """Delete a Category by ID or handle."""
     if request.method not in ["DELETE", "POST"]:
         return JsonResponse({"error": "DELETE or POST required"}, status=405)
-    cat = get_object_or_404(Category, id=category_id)
+    if str(category_id).isdigit():
+        cat = Category.objects.filter(id=int(category_id)).first()
+    else:
+        cat = Category.objects.filter(handle=category_id).first()
+    if not cat:
+        return JsonResponse({"error": "Category not found"}, status=404)
     title = cat.title
     cat.delete()
     return JsonResponse({"success": True, "message": f"Category '{title}' deleted successfully."})
@@ -586,10 +673,15 @@ def api_delete_category(request, category_id):
 
 @csrf_exempt
 def api_delete_subcategory(request, subcategory_id):
-    """Delete a SubCategory."""
+    """Delete a SubCategory by ID or handle."""
     if request.method not in ["DELETE", "POST"]:
         return JsonResponse({"error": "DELETE or POST required"}, status=405)
-    sub = get_object_or_404(SubCategory, id=subcategory_id)
+    if str(subcategory_id).isdigit():
+        sub = SubCategory.objects.filter(id=int(subcategory_id)).first()
+    else:
+        sub = SubCategory.objects.filter(handle=subcategory_id).first()
+    if not sub:
+        return JsonResponse({"error": "Subcategory not found"}, status=404)
     title = sub.title
     sub.delete()
     return JsonResponse({"success": True, "message": f"Subcategory '{title}' deleted successfully."})
@@ -597,8 +689,38 @@ def api_delete_subcategory(request, subcategory_id):
 
 @csrf_exempt
 def api_order_detail(request, order_id):
-    """Get full order details with itemized list for modal / tracking."""
-    order = get_object_or_404(Order.objects.prefetch_related("items"), id=order_id)
+    """Get or update full order details with itemized list for modal / tracking."""
+    if str(order_id).isdigit():
+        order = Order.objects.filter(id=int(order_id)).prefetch_related("items").first()
+    else:
+        order = Order.objects.filter(order_number__iexact=str(order_id)).prefetch_related("items").first()
+        if not order and str(order_id).isalnum():
+            order = Order.objects.filter(order_number__icontains=str(order_id)).prefetch_related("items").first()
+
+    if not order:
+        return JsonResponse({"error": "Order not found"}, status=404)
+
+    # Handle update requests (PATCH / POST / PUT)
+    if request.method in ["PATCH", "POST", "PUT"]:
+        try:
+            data = json.loads(request.body.decode("utf-8")) if request.body else {}
+        except Exception:
+            data = {}
+
+        if "status" in data:
+            order.status = str(data["status"]).strip().lower()
+        if "payment_status" in data:
+            order.payment_status = str(data["payment_status"]).strip().lower()
+        if "paymentStatus" in data:
+            order.payment_status = str(data["paymentStatus"]).strip().lower()
+        if "carrier" in data:
+            order.carrier = str(data["carrier"]).strip()
+        if "tracking_number" in data:
+            order.tracking_number = str(data["tracking_number"]).strip()
+        if "estimated_delivery" in data:
+            order.estimated_delivery = str(data["estimated_delivery"]).strip()
+        order.save()
+
     items_data = []
     for item in order.items.all():
         items_data.append({
@@ -749,10 +871,155 @@ def api_upload_file(request):
     from django.conf import settings
     from django.core.files.storage import default_storage
     upload_subpath = request.POST.get("path", "products/uploads")
-    filename = f"{upload_subpath}/{file_obj.name}".replace("//", "/")
+    # Clean file name and generate unique name if needed
+    import time
+    clean_name = file_obj.name.replace(" ", "_")
+    filename = f"{upload_subpath}/{int(time.time())}_{clean_name}".replace("//", "/")
     saved_path = default_storage.save(filename, file_obj)
-    file_url = f"{settings.MEDIA_URL}{saved_path}"
+    file_url = request.build_absolute_uri(f"{settings.MEDIA_URL}{saved_path}")
     return JsonResponse({"success": True, "url": file_url})
+
+
+@csrf_exempt
+def api_brands_list_create(request):
+    """API endpoint to list and create store brands."""
+    import os
+    data_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "brands_data.json")
+    
+    default_brands = [
+        {
+            "id": 1,
+            "name": "Luma Threads",
+            "slug": "luma-threads",
+            "description": "Premium sustainable essentials & utilitarian craftsmanship",
+            "logo": "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=100&h=100&fit=crop",
+            "categories": [{"slug": "tops", "name": "Tops"}, {"slug": "denim", "name": "Denim"}],
+            "category_ids": ["tops", "denim"],
+            "is_active": True,
+        },
+        {
+            "id": 2,
+            "name": "Pistola Denim",
+            "slug": "pistola-denim",
+            "description": "California-crafted premium denim and modern silhouettes",
+            "logo": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=100&h=100&fit=crop",
+            "categories": [{"slug": "denim", "name": "Denim"}, {"slug": "bottoms", "name": "Bottoms"}],
+            "category_ids": ["denim", "bottoms"],
+            "is_active": True,
+        },
+        {
+            "id": 3,
+            "name": "Atelier Studio",
+            "slug": "atelier-studio",
+            "description": "Tailored outerwear, cashmere knitwear, and timeless classics",
+            "logo": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=100&h=100&fit=crop",
+            "categories": [{"slug": "outerwear", "name": "Outerwear"}, {"slug": "knitwear", "name": "Knitwear"}],
+            "category_ids": ["outerwear", "knitwear"],
+            "is_active": True,
+        },
+    ]
+
+    brands = list(default_brands)
+    if os.path.exists(data_file):
+        try:
+            with open(data_file, "r", encoding="utf-8") as f:
+                loaded = json.load(f)
+                if isinstance(loaded, list) and len(loaded) > 0:
+                    brands = loaded
+        except Exception:
+            pass
+
+    if request.method == "POST":
+        try:
+            body = json.loads(request.body.decode("utf-8")) if request.body else {}
+        except Exception:
+            body = request.POST.dict()
+
+        name = body.get("name", "").strip()
+        if not name:
+            return JsonResponse({"error": "Brand name is required"}, status=400)
+
+        import re, time
+        slug = body.get("slug") or re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+        cat_ids = body.get("category_ids", [])
+        cats = [{"slug": cid, "id": cid, "name": cid.capitalize()} for cid in cat_ids]
+
+        new_brand = {
+            "id": int(time.time() * 1000) % 10000000,
+            "name": name,
+            "slug": slug,
+            "description": body.get("description", ""),
+            "logo": body.get("logo", ""),
+            "categories": cats,
+            "category_ids": cat_ids,
+            "is_active": body.get("is_active", True),
+        }
+
+        brands = [b for b in brands if b.get("slug") != slug]
+        brands.insert(0, new_brand)
+        try:
+            with open(data_file, "w", encoding="utf-8") as f:
+                json.dump(brands, f, indent=2)
+        except Exception:
+            pass
+
+        return JsonResponse(new_brand, status=201)
+
+    search = request.GET.get("search", "").strip().lower()
+    if search:
+        brands = [b for b in brands if search in b.get("name", "").lower() or search in b.get("description", "").lower()]
+
+    return JsonResponse(brands, safe=False)
+
+
+@csrf_exempt
+def api_brand_detail(request, slug):
+    """API endpoint to get, update, or delete a brand."""
+    import os
+    data_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "brands_data.json")
+    brands = []
+    if os.path.exists(data_file):
+        try:
+            with open(data_file, "r", encoding="utf-8") as f:
+                brands = json.load(f)
+        except Exception:
+            pass
+
+    brand = next((b for b in brands if b.get("slug") == slug or str(b.get("id")) == slug), None)
+
+    if request.method == "DELETE":
+        brands = [b for b in brands if b.get("slug") != slug and str(b.get("id")) != slug]
+        try:
+            with open(data_file, "w", encoding="utf-8") as f:
+                json.dump(brands, f, indent=2)
+        except Exception:
+            pass
+        return JsonResponse({"success": True})
+
+    if request.method in ["PATCH", "PUT"]:
+        try:
+            body = json.loads(request.body.decode("utf-8")) if request.body else {}
+        except Exception:
+            body = request.POST.dict()
+
+        if not brand:
+            brand = {"id": slug, "slug": slug, "name": body.get("name", slug)}
+            brands.append(brand)
+
+        brand.update(body)
+        if "category_ids" in body:
+            brand["categories"] = [{"slug": cid, "id": cid, "name": cid.capitalize()} for cid in body["category_ids"]]
+
+        try:
+            with open(data_file, "w", encoding="utf-8") as f:
+                json.dump(brands, f, indent=2)
+        except Exception:
+            pass
+        return JsonResponse(brand)
+
+    if not brand:
+        return JsonResponse({"error": "Brand not found"}, status=404)
+    return JsonResponse(brand)
 
 
 @csrf_exempt
@@ -780,6 +1047,8 @@ def api_customers_list(request):
             "displayName": u.get_full_name() or u.username or u.email.split("@")[0],
             "name": u.get_full_name() or u.username or u.email.split("@")[0],
             "phone": getattr(u, "phone", "") or "",
+            "address": getattr(u, "address", "") or "",
+            "city": getattr(u, "city", "") or "",
             "lastVisit": u.last_login.isoformat() if u.last_login else u.date_joined.isoformat(),
             "visitCount": 1,
             "createdAt": u.date_joined.isoformat(),
@@ -804,8 +1073,13 @@ def api_user_create(request):
     if User.objects.filter(email=email).exists():
         return JsonResponse({"error": "User with this email already exists"}, status=400)
 
+    name = data.get("name", "").strip()
     first_name = data.get("first_name", "").strip()
     last_name = data.get("last_name", "").strip()
+    if name and not first_name:
+        parts = name.split(" ")
+        first_name = parts[0]
+        last_name = " ".join(parts[1:])
     username = email.split("@")[0] + "_" + str(User.objects.count() + 1)
     password = data.get("password") or "Welcome123!"
 
@@ -821,10 +1095,310 @@ def api_user_create(request):
     )
     user.set_password(password)
     user.save()
-
     return JsonResponse({
-        "success": True,
-        "message": f"Customer '{user.get_full_name() or user.email}' created successfully!",
-        "user_id": user.id,
-        "email": user.email
-    })
+        "id": str(user.id),
+        "uid": str(user.id),
+        "email": user.email,
+        "name": user.get_full_name() or user.username or user.email.split("@")[0],
+        "displayName": user.get_full_name() or user.username or user.email.split("@")[0],
+        "phone": getattr(user, "phone", "") or "",
+        "address": getattr(user, "address", "") or "",
+        "city": getattr(user, "city", "") or "",
+        "order_count": 0,
+        "total_spent": 0.0,
+    }, status=201)
+
+
+@csrf_exempt
+def api_admin_reports(request):
+    report_type = request.GET.get("type", "sales_by_city")
+    country_filter = request.GET.get("country", "")
+
+    orders = Order.objects.exclude(status="cancelled")
+
+    if report_type == "sales_by_city":
+        city_data = {}
+        for order in orders:
+            addr = order.shipping_address if isinstance(order.shipping_address, dict) else {}
+            city = addr.get("city") or "Kathmandu"
+            if city not in city_data:
+                city_data[city] = {"total_orders": 0, "total_sales": 0.0}
+            city_data[city]["total_orders"] += 1
+            city_data[city]["total_sales"] += float(order.total_amount or 0)
+
+        default_cities = ["Kathmandu", "Pokhara", "Lalitpur", "Biratnagar", "Bharatpur"]
+        for c in default_cities:
+            if c not in city_data:
+                city_data[c] = {"total_orders": 0, "total_sales": 0.0}
+
+        result = [
+            {"city": city, "total_orders": data["total_orders"], "total_sales": round(data["total_sales"], 2)}
+            for city, data in sorted(city_data.items(), key=lambda x: x[1]["total_sales"], reverse=True)
+        ]
+        return JsonResponse(result, safe=False)
+
+    elif report_type == "sales_by_country":
+        country_data = {}
+        for order in orders:
+            addr = order.shipping_address if isinstance(order.shipping_address, dict) else {}
+            country = addr.get("country") or "Nepal"
+            if country not in country_data:
+                country_data[country] = {"total_orders": 0, "total_sales": 0.0}
+            country_data[country]["total_orders"] += 1
+            country_data[country]["total_sales"] += float(order.total_amount or 0)
+
+        default_countries = ["Nepal", "United States", "India", "United Kingdom", "Australia"]
+        for c in default_countries:
+            if c not in country_data:
+                country_data[c] = {"total_orders": 0, "total_sales": 0.0}
+
+        result = [
+            {"country": country, "total_orders": data["total_orders"], "total_sales": round(data["total_sales"], 2)}
+            for country, data in sorted(country_data.items(), key=lambda x: x[1]["total_sales"], reverse=True)
+        ]
+        return JsonResponse(result, safe=False)
+
+    return JsonResponse([], safe=False)
+
+
+# ==========================================
+# HERO SETTINGS, FOOTER SETTINGS & USER ACTIVITY
+# ==========================================
+
+DATA_DIR = os.path.join(settings.BASE_DIR, "data")
+os.makedirs(DATA_DIR, exist_ok=True)
+
+HERO_FILE = os.path.join(DATA_DIR, "hero_settings.json")
+FOOTER_FILE = os.path.join(DATA_DIR, "footer_settings.json")
+ACTIVITY_FILE = os.path.join(DATA_DIR, "user_activity.json")
+
+DEFAULT_HERO_SETTINGS = {
+    "subtitle": "EVERYDAY UTILITY. ELEVATED EASE.",
+    "title": "WINTER 2026",
+    "desktop": "https://pistoladenim.com/cdn/shop/files/desktop_banner_winter24_2.jpg?v=1730999554&width=3840",
+    "mobile": "https://pistoladenim.com/cdn/shop/files/mobile_banner_winter24_2.jpg?v=1730999554&width=1500",
+    "cta": "EXPLORE THE CAMPAIGN",
+    "ctaHref": "/collections/all-new",
+    "secondaryCta": "SHOP BEST SELLERS",
+    "secondaryCtaHref": "/collections/best-sellers",
+    "badge": "NEW ARRIVAL • ARTISANAL DENIM",
+    "overlayOpacity": 20,
+    "alignment": "center",
+    "bannerHoliday": {
+        "enabled": True,
+        "title": "HOLIDAY 2026",
+        "subtitle": "CURATED CAPSULE COLLECTION",
+        "image": "https://pistoladenim.com/cdn/shop/files/desktop_holiday_banner.jpg?v=1730999554&width=3840",
+        "cta": "SHOP THE DROP",
+        "ctaHref": "/collections/all-denim",
+    }
+}
+
+DEFAULT_FOOTER_SETTINGS = {
+    "newsletter": {
+        "enabled": True,
+        "title": "STAY IN THE KNOW",
+        "placeholder": "Enter your email",
+        "buttonText": "→",
+        "successMessage": "Thank you for subscribing to Luma Threads!",
+    },
+    "customerSupport": {
+        "enabled": True,
+        "heading": "CUSTOMER SUPPORT",
+        "email": "customerservice@lumathreads.com",
+        "hours": "Monday – Friday 8AM – 5PM PST",
+        "phone": "+1 (800) 586-2847",
+        "address": "Atelier Studio, Los Angeles, CA",
+    },
+    "social": {
+        "enabled": True,
+        "facebook": "https://www.facebook.com/pistoladenimla/",
+        "instagram": "https://www.instagram.com/pistoladenim/?hl=en",
+        "twitter": "https://twitter.com/pistoladenim",
+        "pinterest": "https://www.pinterest.com/pistoladenim/",
+        "tiktok": "https://www.tiktok.com/@pistoladenim",
+        "youtube": "",
+    },
+    "columns": [
+        {
+            "id": "col-shop",
+            "title": "SHOP",
+            "enabled": True,
+            "links": [
+                {"label": "All New", "url": "/collections/all-new"},
+                {"label": "All Denim", "url": "/collections/all-denim"},
+                {"label": "Best Sellers", "url": "/collections/best-sellers"},
+                {"label": "Barrel Jeans", "url": "/collections/all-denim"},
+                {"label": "Straight Leg", "url": "/collections/all-denim"},
+            ],
+        },
+        {
+            "id": "col-about",
+            "title": "ABOUT",
+            "enabled": True,
+            "links": [
+                {"label": "Our Story", "url": "/pages/about-us"},
+                {"label": "Denim Fit Guide", "url": "/collections/all-denim"},
+                {"label": "Sustainability", "url": "/pages/about-us"},
+                {"label": "Stockists", "url": "/pages/about-us"},
+            ],
+        },
+        {
+            "id": "col-help",
+            "title": "HELP",
+            "enabled": True,
+            "links": [
+                {"label": "Shipping & Returns", "url": "/pages/about-us"},
+                {"label": "FAQ", "url": "/pages/about-us"},
+                {"label": "Size Guide", "url": "/pages/about-us"},
+                {"label": "Contact Us", "url": "/pages/about-us"},
+            ],
+        },
+    ],
+    "bottomBar": {
+        "copyright": "© 2026, Luma Threads. All rights reserved.",
+        "showPaymentBadges": True,
+        "paymentBadges": [
+            "VISA", "MC", "AMEX", "DISC", "APPLE PAY", "PAYPAL", "KLARNA", "AFTERPAY"
+        ],
+    },
+}
+
+
+@csrf_exempt
+def api_admin_hero_settings(request):
+    if request.method in ["POST", "PUT", "PATCH"]:
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+            with open(HERO_FILE, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+            return JsonResponse({"status": "success", "data": data})
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=400)
+
+    # GET request
+    if os.path.exists(HERO_FILE):
+        try:
+            with open(HERO_FILE, "r", encoding="utf-8") as f:
+                settings_data = json.load(f)
+            return JsonResponse(settings_data)
+        except Exception:
+            pass
+
+    return JsonResponse(DEFAULT_HERO_SETTINGS)
+
+
+@csrf_exempt
+def api_admin_footer_settings(request):
+    if request.method in ["POST", "PUT", "PATCH"]:
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+            with open(FOOTER_FILE, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+            return JsonResponse({"status": "success", "data": data})
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=400)
+
+    # GET request
+    if os.path.exists(FOOTER_FILE):
+        try:
+            with open(FOOTER_FILE, "r", encoding="utf-8") as f:
+                settings_data = json.load(f)
+            return JsonResponse(settings_data)
+        except Exception:
+            pass
+
+    return JsonResponse(DEFAULT_FOOTER_SETTINGS)
+
+
+@csrf_exempt
+def api_admin_activity(request):
+    """Activity tracking API: records and queries user sessions, page durations, and card interactions."""
+    if request.method == "POST":
+        try:
+            payload = json.loads(request.body.decode("utf-8"))
+            now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            
+            activity = {
+                "id": payload.get("id") or f"act_{uuid.uuid4().hex[:12]}",
+                "uid": payload.get("uid") or "guest",
+                "email": payload.get("email") or "guest@lumathreads.local",
+                "displayName": payload.get("displayName") or "Guest Visitor",
+                "pageType": payload.get("pageType") or "page",
+                "path": payload.get("path") or "/",
+                "action": payload.get("action") or "page_view",
+                "duration": int(payload.get("duration") or 0),
+                "metadata": payload.get("metadata") or {},
+                "timestamp": payload.get("timestamp") or now_iso,
+                "userAgent": payload.get("userAgent") or request.META.get("HTTP_USER_AGENT", ""),
+                "screenResolution": payload.get("screenResolution") or "",
+                "ipAddress": request.META.get("REMOTE_ADDR", ""),
+            }
+
+            activities = []
+            if os.path.exists(ACTIVITY_FILE):
+                try:
+                    with open(ACTIVITY_FILE, "r", encoding="utf-8") as f:
+                        activities = json.load(f)
+                except Exception:
+                    activities = []
+
+            # If activity is a duration update for an existing session/card, update in place
+            updated = False
+            if activity.get("id"):
+                for existing in activities:
+                    if existing.get("id") == activity["id"]:
+                        existing["duration"] = activity["duration"]
+                        existing["metadata"] = activity["metadata"]
+                        existing["timestamp"] = activity["timestamp"]
+                        updated = True
+                        break
+
+            if not updated:
+                activities.insert(0, activity)
+
+            # Cap at 5000 records to prevent unbounded disk growth
+            activities = activities[:5000]
+
+            with open(ACTIVITY_FILE, "w", encoding="utf-8") as f:
+                json.dump(activities, f, indent=2)
+
+            return JsonResponse({"status": "success", "activity": activity})
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=400)
+
+    # GET request
+    activities = []
+    if os.path.exists(ACTIVITY_FILE):
+        try:
+            with open(ACTIVITY_FILE, "r", encoding="utf-8") as f:
+                activities = json.load(f)
+        except Exception:
+            activities = []
+
+    # Optional Filters
+    uid_filter = request.GET.get("uid")
+    path_filter = request.GET.get("path")
+    action_filter = request.GET.get("action")
+    card_filter = request.GET.get("card")
+
+    filtered = activities
+    if uid_filter:
+        filtered = [a for a in filtered if a.get("uid") == uid_filter]
+    if path_filter:
+        filtered = [a for a in filtered if a.get("path") == path_filter]
+    if action_filter:
+        filtered = [a for a in filtered if a.get("action") == action_filter]
+    if card_filter:
+        filtered = [
+            a for a in filtered
+            if a.get("metadata", {}).get("productHandle") == card_filter or
+               a.get("metadata", {}).get("productTitle") == card_filter
+        ]
+
+    limit = request.GET.get("limit")
+    if limit and limit.isdigit():
+        filtered = filtered[:int(limit)]
+
+    return JsonResponse(filtered, safe=False)
+

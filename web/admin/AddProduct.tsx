@@ -1,2475 +1,3194 @@
-import { useState, useRef, useEffect } from "react";
+"use client";
+
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Link, useNavigate, useOutletContext } from "react-router-dom";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import Stack from "@/frontend/components/Stack";
-import { useAuth } from "@/context/AuthContext";
 import { productService } from "@/api/productService";
 import { categoryService } from "@/api/categoryService";
-import { uploadService } from "@/api/uploadService";
 import { brandService } from "@/api/brandService";
-import { collectionService, type Collection } from "@/api/collectionService";
+import { collectionService } from "@/api/collectionService";
+import { uploadService } from "@/api/uploadService";
 import { toast } from "sonner";
-import { useGSAPReveal } from "@/hooks/useGSAP";
 import { motion, AnimatePresence } from "motion/react";
 import {
-  ChevronLeft, Save, X, Image as ImageIcon, Plus, Trash2, Package,
-  LayoutDashboard, CheckCircle2, TrendingUp, Upload, Box, Eye, Check,
-  Settings, Truck, Star, Tag, Menu,
-  Smartphone, Laptop, Tv, Headphones, Speaker, Watch, Camera, Cpu,
-  Mouse, Keyboard, HardDrive, Tablet, Monitor, Printer, Wifi, Battery,
-  Mic, Gamepad, Radio, Zap, Usb, Bluetooth, Power, Headset, Projector,
-  Router, Server, Disc, Video, Music, Phone, Mail, Globe, Cloud, Database,
-  Code, Terminal, CircuitBoard, EyeOff, Loader2
+  Shirt,
+  Tag,
+  Layers,
+  Package,
+  Sparkles,
+  Check,
+  CheckCircle2,
+  Plus,
+  Trash2,
+  Upload,
+  Eye,
+  EyeOff,
+  Save,
+  ChevronLeft,
+  ArrowRight,
+  ShieldCheck,
+  Ruler,
+  Droplet,
+  RefreshCw,
+  Scissors,
+  Palette,
+  AlertCircle,
+  Info,
+  Image as ImageIcon,
+  DollarSign,
+  ArrowUp,
+  ArrowDown,
+  Star,
+  GripVertical,
+  X,
+  FileImage,
+  SlidersHorizontal,
+  Smartphone
 } from "lucide-react";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useCategories } from "@/hooks/useCategories";
-import { renderCategoryIcon, getCategoryColor } from "@/lib/icons";
 
-const COLORS = [
-  { name: "Red", hex: "#EF4444" },
-  { name: "Blue", hex: "#3B82F6" },
-  { name: "Black", hex: "#000000" },
-  { name: "White", hex: "#FFFFFF" },
-  { name: "Silver", hex: "#C0C0C0" },
+// Fashion palette presets
+const FASHION_PALETTE = [
+  { name: "Raw Indigo", hex: "#1E293B" },
+  { name: "Vintage Black", hex: "#111111" },
+  { name: "Washed Charcoal", hex: "#2D3748" },
+  { name: "Crisp White", hex: "#FFFFFF" },
+  { name: "Bone / Oatmeal", hex: "#F3EDE2" },
+  { name: "Vintage Blue", hex: "#3B82F6" },
+  { name: "Washed Olive", hex: "#3F4E3A" },
+  { name: "Terracotta", hex: "#A0522D" },
+  { name: "Sand Dune", hex: "#D2B48C" },
+  { name: "Burgundy", hex: "#5B1425" },
 ];
 
+// Curated sample fashion photos for quick 1-click photo population
+const SAMPLE_FASHION_PHOTOS = [
+  { label: "Selvedge Denim", url: "https://images.unsplash.com/photo-1542272604-780c96856592?w=800&auto=format&fit=crop&q=80" },
+  { label: "Washed Black Denim", url: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800&auto=format&fit=crop&q=80" },
+  { label: "Canvas Workwear", url: "https://images.unsplash.com/photo-1548883354-7622d03aca27?w=800&auto=format&fit=crop&q=80" },
+  { label: "Black Outerwear", url: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&auto=format&fit=crop&q=80" },
+  { label: "Sage Utility Jacket", url: "https://images.unsplash.com/photo-1516257984-b1b4d707412e?w=800&auto=format&fit=crop&q=80" },
+  { label: "Heavyweight Tee", url: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80" },
+  { label: "Cashmere Knit", url: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&auto=format&fit=crop&q=80" },
+  { label: "Silk Wrap Dress", url: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&auto=format&fit=crop&q=80" },
+];
 
-const CATEGORY_ICONS_MAP: Record<string, string[]> = {
-  "Electronics & Technology": [
-    "Laptop", "Smartphone", "Headphones", "Camera", "Monitor",
-    "Cpu", "Mouse", "Keyboard", "Speaker", "Watch",
-    "Tv", "Tablet", "Gamepad", "Printer", "Wifi",
-    "Battery", "Zap", "Usb", "Bluetooth", "Router",
-    "Server", "HardDrive", "Projector", "Mic", "Radio",
-    "Video", "Disc", "CircuitBoard", "Power", "Headset"
-  ],
-  "Clothing & Fashion": [
-    "Shirt", "ShoppingBag", "Briefcase", "Crown", "Gem", "Sparkles", "Smile", "Heart",
-    "Watch", "Percent", "Tag", "Gift", "User", "Wallet"
-  ],
-  "Cosmetics & Beauty": [
-    "Sparkles", "Flower", "Flower2", "Droplet", "Heart", "Smile", "Sun", "Sprout", "Eye",
-    "GlassWater", "Wind", "Scissors", "Gift", "Percent", "Moon"
-  ],
-  "Home, Furniture & Garden": [
-    "Home", "Armchair", "Bed", "Lamp", "Table", "Trees", "Flower", "Flower2",
-    "Sprout", "Fence", "Hammer", "Wrench", "Paintbrush", "Shovel", "Droplet"
-  ],
-  "Grocery & Food": [
-    "Apple", "Citrus", "Banana", "Grape", "Carrot", "Egg", "Milk", "Croissant", "IceCream",
-    "Pizza", "Cookie", "GlassWater", "Cherry", "Beef", "Fish", "Soup", "Cake", "Salad", "Store", "ShoppingBasket"
-  ],
-  "Cafes & Coffee Shops": [
-    "Coffee", "CupSoda", "GlassWater", "Cake", "Croissant", "Cookie", "IceCream", "Flame",
-    "Soup", "Utensils", "UtensilsCrossed", "Table", "Store"
-  ],
-  "Hotels & Lodging": [
-    "Hotel", "Bed", "Home", "Key", "Calendar", "MapPin", "Map", "Compass", "ShieldCheck",
-    "Coffee", "Luggage", "ConciergeBell", "Wifi", "Tv", "Waves"
-  ],
-  "Pet Supplies": [
-    "Dog", "Cat", "Fish", "Bird", "Bone", "Heart", "ShieldCheck", "Package", "Stethoscope"
-  ],
-  "Toys & Hobbies": [
-    "Gamepad2", "Puzzle", "ToyBrick", "Castle", "PartyPopper", "Dribbble", "Trophy", "Ghost", "Rocket"
-  ],
-  "Sports & Outdoors": [
-    "Dumbbell", "Trophy", "Activity", "Footprints", "Bike", "Mountain", "Tent", "Compass", "Waves"
-  ],
-  "Automotive & Motorcycle": [
-    "Car", "Fuel", "Gauge", "Settings", "Settings2", "Wrench", "ShieldCheck", "Zap"
-  ],
-  "Health & Wellness": [
-    "Activity", "Heart", "Stethoscope", "Pill", "Medal", "Sprout", "Leaf", "Sun"
-  ],
-  "Baby & Maternity": [
-    "Baby", "Heart", "Sparkles", "Smile", "Gift", "Moon", "Stroller"
-  ],
-  "Office & School Supplies": [
-    "Pencil", "Pen", "Notebook", "Bookmark", "Briefcase", "Printer", "Calculator", "Lightbulb"
-  ],
-  "Jewelry & Watches": [
-    "Gem", "Watch", "Crown", "Sparkles", "Heart", "Gift", "Scale"
-  ],
-  "Books, Music & Media": [
-    "Book", "Music", "Play", "Headphones", "Speaker", "Mic", "Library", "Newspaper"
-  ],
-  "Tools & Home Improvement": [
-    "Hammer", "Wrench", "Drill", "Construction", "HardHat", "Lightbulb", "Flashlight", "Ruler"
-  ],
-  "Luggage & Travel Accessories": [
-    "Luggage", "Briefcase", "Map", "Plane", "Train", "Bus", "Backpack", "Passport"
-  ],
-  "Pharmacy & Medical Supplies": [
-    "Pill", "Stethoscope", "Thermometer", "FirstAid", "Activity", "ShieldCheck", "Cross"
-  ]
+// Sizing presets
+const SIZE_PRESETS = {
+  denim: {
+    label: "Denim & Waist",
+    sizes: ["24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "36"],
+  },
+  apparel: {
+    label: "Tops & Outerwear",
+    sizes: ["XS", "S", "M", "L", "XL", "XXL"],
+  },
+  dresses: {
+    label: "Dresses & Tailoring",
+    sizes: ["0", "2", "4", "6", "8", "10", "12"],
+  },
+  onesize: {
+    label: "Accessories / O/S",
+    sizes: ["O/S"],
+  },
 };
 
+// Category Specification Blueprint Pills
+const CATEGORY_FEATURE_BLUEPRINTS: Record<string, string[]> = {
+  denim: [
+    "100% Japanese Selvedge Cotton",
+    "13.5 oz Raw Rigid Denim",
+    "Custom Embossed Copper Rivets",
+    "Sanforized Fabric (Minimal Shrinkage)",
+    "Classic 5-Pocket Construction",
+    "Chain-Stitched Hems & Waistband",
+    "Button Fly with Antiqued Metal Shank",
+  ],
+  tops: [
+    "280 GSM Heavyweight French Terry",
+    "100% GOTS Certified Organic Cotton",
+    "Garment-Dyed & Enzyme Washed",
+    "1x1 Ribbed Collar with Bound Neckline",
+    "Relaxed Drop-Shoulder Silhouette",
+    "Flatlock Seam Construction",
+    "Ethically Made in Portugal",
+  ],
+  sweaters: [
+    "100% Extrafine Merino Wool",
+    "7-Gauge Heavyweight Fisherman Rib",
+    "Sustainably Sourced Woolmark Fibers",
+    "Natural Buffalo Horn Buttons",
+    "Thermal Regulating & Odor-Resistant",
+    "Hand-Linked Collar & Cuffs",
+  ],
+  jackets: [
+    "Heavyweight Double-Faced Wool Blend",
+    "Water-Repellent DWR Finish",
+    "100% Bemberg Cupro Satin Lining",
+    "Storm Flap & Horn Buckles",
+    "Deep Welt Handwarmer Pockets",
+    "Interior Chest Passport Pocket",
+  ],
+  dresses: [
+    "100% Mulberry Silk Satin",
+    "Bias-Cut Silhouette for Fluid Drape",
+    "Concealed Inseam Side Zip",
+    "French Seam Interior Finishing",
+    "Adjustable Delicate Spaghetti Straps",
+    "Double-Layered Lined Bodice",
+  ],
+  jumpsuits: [
+    "Garment-Washed Linen Cotton Twill",
+    "Elasticated Cinched Waist with Belt",
+    "Utility Chest & Patch Hip Pockets",
+    "Concealed Front Zip Closure",
+    "Tapered Ankle with Cuff Detail",
+  ],
+  accessories: [
+    "Full-Grain Vegetable Tanned Italian Leather",
+    "Solid Cast Brass Hardware",
+    "Debossed Subtle Brand Monogram",
+    "Burnished Hand-Finished Edges",
+  ],
+};
 
-const AddProduct = () => {
-  const { setIsSidebarOpen } = useOutletContext<{ setIsSidebarOpen: (open: boolean) => void }>();
-  const { user } = useAuth();
-  const companyCategory = user?.company?.category || "Electronics & Technology";
-  const presetIcons = CATEGORY_ICONS_MAP[companyCategory] || CATEGORY_ICONS_MAP["Electronics & Technology"];
+const FIT_OPTIONS = [
+  "Relaxed",
+  "Straight",
+  "Slim",
+  "Oversized",
+  "Tailored",
+  "Boxy",
+  "Wide-Leg",
+  "Barrel",
+  "Flare",
+  "Skinny",
+];
 
-  const isAdmin = user?.is_staff || user?.is_superuser;
-  const containerRef = useRef<HTMLDivElement>(null);
+const RISE_OPTIONS = [
+  "High Rise",
+  "Mid Rise",
+  "Low Rise",
+  "Super High Rise",
+  "Standard",
+];
+
+const WASH_OPTIONS = [
+  "Raw Indigo",
+  "Vintage Wash",
+  "Washed Black",
+  "Bleached Light",
+  "Stone Wash",
+  "Garment Dyed",
+  "Clean Finish",
+  "Distressed",
+];
+
+const BADGE_PRESETS = [
+  "NEW ARRIVAL",
+  "BEST SELLER",
+  "LIMITED EDITION",
+  "EXCLUSIVE",
+  "ORGANIC",
+  "SALE",
+];
+
+// Colorway Variant Interface
+export interface ColorwayItem {
+  id: string;
+  name: string;
+  hex: string;
+  price: string;
+  originalPrice: string;
+  description: string;
+  descriptions?: string[];
+  sizes: string[];
+  stock: string;
+  primaryImage: string;
+  hoverImage: string;
+  galleryImages: string[];
+}
+
+export default function AddProduct() {
+  const { setIsSidebarOpen } = useOutletContext<{ setIsSidebarOpen?: (open: boolean) => void }>() || {};
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
-  const [formData, setFormData] = useState({
-    name: "",
-    slug: "",
-    category: "",
-    categorySlug: "",
-    brand: "",
-    type: "",
-    description: "",
-    price: "",
-    originalPrice: "",
-    discount: "",
-    stockCount: "10",
-    rating: "0",
-    reviews: "0",
-    inStock: true,
-    isNew: false,
-    isBestSeller: false,
-    isPopular: false,
-    isOffer: false,
-    freeShipping: false,
-    image: "",
-    images: [] as string[],
-    model3D: "",
-    model3DFrames: [] as string[],
-    colors: [] as { name: string; hex: string }[],
-    collections: [] as string[],
-    details: "",
-    specs: [{ key: "", value: "" }],
-    keySpecifications: [] as string[],
-    features: [] as string[],
+  // SECTION 1: GARMENT IDENTIFICATION
+  const [title, setTitle] = useState("");
+  const [handle, setHandle] = useState("");
+  const [brand, setBrand] = useState("Luma Threads");
+  const [newBrandInput, setNewBrandInput] = useState("");
+  const [isAddingNewBrand, setIsAddingNewBrand] = useState(false);
+  const [isSavingBrand, setIsSavingBrand] = useState(false);
+
+  // Gender / Silhouette options with Create & Delete
+  const [gender, setGender] = useState<string>("Unisex");
+  const [genderOptions, setGenderOptions] = useState<string[]>(["Women", "Men", "Unisex"]);
+  const [showAddGenderInput, setShowAddGenderInput] = useState(false);
+  const [newGenderTitle, setNewGenderTitle] = useState("");
+
+  // Merchandising Badge options with Create & Delete
+  const [badge, setBadge] = useState("NEW ARRIVAL");
+  const [badges, setBadges] = useState<string[]>(BADGE_PRESETS);
+  const [showAddBadgeInput, setShowAddBadgeInput] = useState(false);
+  const [newBadgeTitle, setNewBadgeTitle] = useState("");
+
+  const [isActive, setIsActive] = useState(true);
+  const [isFeatured, setIsFeatured] = useState(false);
+
+  // Multi-image paste URL & multi-file state for active colorway
+  const multiFileInputRef = useRef<HTMLInputElement>(null);
+  const [showAddUrlInput, setShowAddUrlInput] = useState(false);
+  const [newImageUrlInput, setNewImageUrlInput] = useState("");
+
+  // SECTION 2: APPAREL TAXONOMY & COLLECTIONS
+  const [selectedCategory, setSelectedCategory] = useState("denim");
+  const [selectedSubCategory, setSelectedSubCategory] = useState("");
+  const [selectedCollections, setSelectedCollections] = useState<string[]>(["all-denim", "all-new"]);
+
+  // Category and SubCategory Create & Delete state
+  const [showAddCategoryInput, setShowAddCategoryInput] = useState(false);
+  const [newCategoryTitle, setNewCategoryTitle] = useState("");
+  const [isSavingCategory, setIsSavingCategory] = useState(false);
+
+  const [showAddSubCategoryInput, setShowAddSubCategoryInput] = useState(false);
+  const [newSubCategoryTitle, setNewSubCategoryTitle] = useState("");
+  const [isSavingSubCategory, setIsSavingSubCategory] = useState(false);
+
+  // Collections Create & Delete state
+  const [showAddCollectionInput, setShowAddCollectionInput] = useState(false);
+  const [newCollectionTitle, setNewCollectionTitle] = useState("");
+  const [isSavingCollection, setIsSavingCollection] = useState(false);
+
+  // SECTION 3: FEATURES & BLUEPRINT SPECIFICATIONS
+  const [details, setDetails] = useState<string[]>([
+    "100% Japanese Selvedge Cotton",
+    "13.5 oz Raw Rigid Denim",
+    "Custom Embossed Copper Rivets",
+    "Sanforized Fabric (Minimal Shrinkage)",
+    "Chain-Stitched Hems & Waistband",
+  ]);
+  const [newDetailInput, setNewDetailInput] = useState("");
+  const [sizeAndFit, setSizeAndFit] = useState(
+    "Model is 6'1\" / 185cm wearing size 32 waist. True to size with a comfortable straight drape."
+  );
+  const [care, setCare] = useState(
+    "For raw denim, wear for 6 months before first wash. When needed, soak cold inside-out with mild detergent. Hang dry."
+  );
+  const [fit, setFit] = useState("Straight");
+  const [rise, setRise] = useState("Mid Rise");
+  const [wash, setWash] = useState("Raw Indigo");
+
+  // Denim Tailoring Specifications state (with Add & Delete features)
+  const [denimSpecs, setDenimSpecs] = useState<Array<{ id: string; label: string; value: string; type?: "fit" | "rise" | "wash" | "custom" }>>([
+    { id: "spec-fit", label: "Fit Silhouette", value: "Straight", type: "fit" },
+    { id: "spec-rise", label: "Waist Rise", value: "Mid Rise", type: "rise" },
+    { id: "spec-wash", label: "Wash Finish", value: "Raw Indigo", type: "wash" },
+  ]);
+  const [showAddDenimSpecInput, setShowAddDenimSpecInput] = useState(false);
+  const [newDenimSpecLabel, setNewDenimSpecLabel] = useState("");
+  const [newDenimSpecValue, setNewDenimSpecValue] = useState("");
+
+  // SECTION 4: COLOR-FIRST VARIANT ARCHITECTURE
+  const [colorways, setColorways] = useState<ColorwayItem[]>([
+    {
+      id: "cw-1",
+      name: "Raw Indigo",
+      hex: "#1E293B",
+      price: "195.00",
+      originalPrice: "225.00",
+      description:
+        "Deep unwashed Japanese raw selvedge denim woven on vintage Toyoda shuttle looms. Features signature red selvedge ID line and develops personalized fade patterns with wear.",
+      descriptions: [
+        "Deep unwashed Japanese raw selvedge denim woven on vintage Toyoda shuttle looms.",
+        "Features signature red selvedge ID line and develops personalized fade patterns with wear.",
+        "Sanforized 13.5oz rigid cotton designed for authentic heritage draping."
+      ],
+      sizes: ["28", "29", "30", "31", "32", "33", "34", "36"],
+      stock: "50",
+      primaryImage:
+        "https://images.unsplash.com/photo-1542272604-780c96856592?w=800&auto=format&fit=crop&q=80",
+      hoverImage:
+        "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800&auto=format&fit=crop&q=80",
+      galleryImages: [],
+    },
+    {
+      id: "cw-2",
+      name: "Vintage Washed Black",
+      hex: "#1F1F1F",
+      price: "185.00",
+      originalPrice: "215.00",
+      description:
+        "Slightly faded charcoal black finish achieved through gentle volcanic pumice enzyme wash. Softened drape with subtle hand-scraping on thigh and pockets.",
+      descriptions: [
+        "Slightly faded charcoal black finish achieved through gentle volcanic pumice enzyme wash.",
+        "Softened drape with subtle hand-scraping on thigh and pockets.",
+        "Breathable all-season comfort with enduring dark tones."
+      ],
+      sizes: ["28", "29", "30", "31", "32", "34"],
+      stock: "40",
+      primaryImage:
+        "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800&auto=format&fit=crop&q=80",
+      hoverImage:
+        "https://images.unsplash.com/photo-1542272604-780c96856592?w=800&auto=format&fit=crop&q=80",
+      galleryImages: [],
+    },
+  ]);
+
+  // Which colorway is currently open in the editor form
+  const [activeColorwayId, setActiveColorwayId] = useState<string>("cw-1");
+
+  // SECTION 5: LIVE CARD PREVIEW INTERACTIVE STATE
+  const [previewActiveSwatchId, setPreviewActiveSwatchId] = useState<string>("cw-1");
+  const [previewHovered, setPreviewHovered] = useState(false);
+  const [previewSelectedSize, setPreviewSelectedSize] = useState("");
+  const [customSizeInput, setCustomSizeInput] = useState("");
+
+  // IMAGE UPLOADING & DRAG AND DROP STATE
+  const [uploadingTarget, setUploadingTarget] = useState<"primary" | "hover" | "gallery" | null>(null);
+  const [isDragOverPrimary, setIsDragOverPrimary] = useState(false);
+  const [isDragOverHover, setIsDragOverHover] = useState(false);
+  const primaryFileInputRef = useRef<HTMLInputElement>(null);
+  const hoverFileInputRef = useRef<HTMLInputElement>(null);
+  const galleryFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Backend queries
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => categoryService.getAll(),
   });
 
-  const { categories, loading: categoriesLoading } = useCategories();
-
-  // Fetch all brands from the Brand model
   const { data: dbBrands = [], isLoading: brandsLoading } = useQuery({
-    queryKey: ['brands'],
+    queryKey: ["brands"],
     queryFn: () => brandService.getAll(),
   });
 
-  const { data: availableCollections = [], isLoading: collectionsLoading } = useQuery({
-    queryKey: ['collections'],
+  const { data: dbCollections = [], isLoading: collectionsLoading } = useQuery({
+    queryKey: ["collections"],
     queryFn: () => collectionService.getAll(),
   });
 
-  const [newCategory, setNewCategory] = useState("");
-  const [newCategoryIcon, setNewCategoryIcon] = useState("📦");
-  const [iconSearch, setIconSearch] = useState("");
-  const [newCategoryIconFile, setNewCategoryIconFile] = useState<File | null>(null);
-  const [mainImageFile, setMainImageFile] = useState<File | null>(null);
-  const [bulkImageFiles, setBulkImageFiles] = useState<File[]>([]);
-  const [model3DFile, setModel3DFile] = useState<File | null>(null);
-  const [videoUploading, setVideoUploading] = useState(false);
-  const [videoFramePreviewIndex, setVideoFramePreviewIndex] = useState(0);
-
-  const handleVideoToFramesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setVideoUploading(true);
-    try {
-      const uploadData = new FormData();
-      uploadData.append('video_file', file);
-
-      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const res = await fetch('/api/videos/upload/', {
-        method: 'POST',
-        headers,
-        body: uploadData,
-      });
-
-      if (!res.ok) {
-        let errorMsg = `Server returned status ${res.status}`;
-        try {
-          const errData = await res.json();
-          if (errData.error) errorMsg = errData.error;
-          else if (errData.detail) errorMsg = errData.detail;
-          else if (typeof errData === 'string') errorMsg = errData;
-        } catch {
-          // ignore non-json errors
-        }
-        throw new Error(errorMsg);
-      }
-
-      const data = await res.json();
-      if (data.frames && Array.isArray(data.frames) && data.frames.length > 0) {
-        setFormData(prev => ({ ...prev, model3DFrames: data.frames }));
-        setVideoFramePreviewIndex(0);
-        toast.success(`Video converted! Extracted ${data.frames.length} 3D frames.`);
-      } else {
-        toast.error('No frames could be extracted from this video file.');
-      }
-    } catch (err: any) {
-      console.error('Video 3D frame extraction error:', err);
-      toast.error(err.message || 'Error uploading and processing video file.');
-    } finally {
-      setVideoUploading(false);
-    }
-  };
-
-  const [showDeleteCategoryConfirm, setShowDeleteCategoryConfirm] = useState(false);
-  const [showDeleteBrandConfirm, setShowDeleteBrandConfirm] = useState(false);
-  const [showDeleteTypeConfirm, setShowDeleteTypeConfirm] = useState(false);
-  const [categoryArchitecture, setCategoryArchitecture] = useState<{
-    subcategories: { name: string; slug: string }[];
-    brands: string[];
-    features: string[];
-  }>({ subcategories: [], brands: [], features: [] });
-
-  const [activeSection, setActiveSection] = useState("general");
-
-  const [isAddingNewBrand, setIsAddingNewBrand] = useState(false);
-  const [isAddingNewType, setIsAddingNewType] = useState(false);
-  const [newBrandInput, setNewBrandInput] = useState("");
-  const [newTypeInput, setNewTypeInput] = useState("");
-  const [newTypeSlugInput, setNewTypeSlugInput] = useState("");
-  const [newCollectionInput, setNewCollectionInput] = useState("");
-  const [pendingDeleteCollection, setPendingDeleteCollection] = useState<{ id: string, name: string } | null>(null);
-  const [allBrands, setAllBrands] = useState<string[]>([]);
-  const [newGlobalBrand, setNewGlobalBrand] = useState("");
-  const [allocCategorySlugs, setAllocCategorySlugs] = useState<string[]>([]);
-
-  const sections = [
-    { id: "general", label: "Basic Info" },
-    { id: "pricing", label: "Pricing & Stock" },
-    { id: "media", label: "Media" },
-    { id: "specs", label: "Specifications" },
-    { id: "features", label: "Features" },
-    { id: "collections", label: "Collections & Colors" }
-  ];
-
-  const scrollToSection = (id: string) => {
-    setActiveSection(id);
-    const element = document.getElementById(id);
-    if (element) {
-      const offset = 140; // Adjust based on header + subnav height
-      const bodyRect = document.body.getBoundingClientRect().top;
-      const elementRect = element.getBoundingClientRect().top;
-      const elementPosition = elementRect - bodyRect;
-      const offsetPosition = elementPosition - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth"
-      });
-    }
-  };
-
-  const revealOptions = useRef({ opacity: 0, y: 20, duration: 0.6, stagger: 0.05 });
-  useGSAPReveal(containerRef, ".gsap-reveal", revealOptions.current);
-
+  // Ensure activeColorwayId is valid
   useEffect(() => {
-    if (showPreview) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
+    if (!colorways.some((cw) => cw.id === activeColorwayId) && colorways.length > 0) {
+      setActiveColorwayId(colorways[0].id);
     }
-    return () => {
-      document.body.style.overflow = "unset";
-    };
-  }, [showPreview]);
+  }, [colorways, activeColorwayId]);
 
+  // When colorways reorder or 1st colorway changes, update preview default swatch
   useEffect(() => {
-    // compute aggregated brands from categories and the Brand model
-    const gatherBrands = () => {
-      const fromCategories = categories.flatMap(c => c.brands || []);
-      const fromModel = dbBrands.map(b => b.name);
-      const unique = Array.from(new Set([...fromCategories, ...fromModel])).sort((a, b) => a.localeCompare(b));
-      setAllBrands(unique);
+    if (colorways.length > 0 && !colorways.some((cw) => cw.id === previewActiveSwatchId)) {
+      setPreviewActiveSwatchId(colorways[0].id);
+    }
+  }, [colorways, previewActiveSwatchId]);
+
+  // Auto-generate handle/slug
+  const handleTitleChange = (val: string) => {
+    setTitle(val);
+    const slug = val
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+    setHandle(slug);
+  };
+
+  // Find category object
+  const currentCategoryObj = useMemo(() => {
+    return categories.find(
+      (c) =>
+        c.handle === selectedCategory ||
+        c.slug === selectedCategory ||
+        c.title === selectedCategory ||
+        c.name === selectedCategory ||
+        String(c.id) === selectedCategory
+    );
+  }, [categories, selectedCategory]);
+
+  const availableSubcategories = useMemo(() => {
+    return currentCategoryObj?.subcategories || [];
+  }, [currentCategoryObj]);
+
+  // Blueprint feature suggestions for current category
+  const suggestedBlueprintFeatures = useMemo(() => {
+    const catLower = (currentCategoryObj?.handle || selectedCategory || "").toLowerCase();
+    for (const [key, features] of Object.entries(CATEGORY_FEATURE_BLUEPRINTS)) {
+      if (catLower.includes(key)) return features;
+    }
+    return CATEGORY_FEATURE_BLUEPRINTS["tops"];
+  }, [currentCategoryObj, selectedCategory]);
+
+  // The active colorway currently being edited in the form
+  const activeColorway = useMemo(() => {
+    return colorways.find((cw) => cw.id === activeColorwayId) || colorways[0];
+  }, [colorways, activeColorwayId]);
+
+  // The swatch currently chosen on the Live Preview Card
+  const cardPreviewColorway = useMemo(() => {
+    return colorways.find((cw) => cw.id === previewActiveSwatchId) || colorways[0];
+  }, [colorways, previewActiveSwatchId]);
+
+  // Update a field on the currently active colorway
+  const updateActiveColorway = (fields: Partial<ColorwayItem>) => {
+    setColorways((prev) =>
+      prev.map((cw) => (cw.id === activeColorway.id ? { ...cw, ...fields } : cw))
+    );
+  };
+
+  // COLORWAY MANAGEMENT & REORDERING
+  const moveColorway = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= colorways.length) return;
+    const nextList = [...colorways];
+    const [moved] = nextList.splice(fromIndex, 1);
+    nextList.splice(toIndex, 0, moved);
+    setColorways(nextList);
+    if (toIndex === 0) {
+      setPreviewActiveSwatchId(moved.id);
+      toast.success(`"${moved.name}" is now the 1st / Default Colorway on the card!`);
+    }
+  };
+
+  const setAsDefaultFirst = (colorwayId: string) => {
+    const idx = colorways.findIndex((c) => c.id === colorwayId);
+    if (idx > 0) {
+      moveColorway(idx, 0);
+    }
+  };
+
+  const addColorway = () => {
+    const newId = `cw-${Date.now()}`;
+    const newColorway: ColorwayItem = {
+      id: newId,
+      name: "New Colorway",
+      hex: "#3F4E3A",
+      price: activeColorway?.price || "185.00",
+      originalPrice: activeColorway?.originalPrice || "215.00",
+      description: "Artisan tailored colorway crafted with premium pigments and specialized wash techniques.",
+      descriptions: [
+        "Artisan tailored colorway crafted with premium pigments and specialized wash techniques."
+      ],
+      sizes: [...(activeColorway?.sizes || ["28", "29", "30", "31", "32"])],
+      stock: "30",
+      primaryImage: "https://images.unsplash.com/photo-1542272604-780c96856592?w=800",
+      hoverImage: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800",
+      galleryImages: [],
     };
-    gatherBrands();
-  }, [categories, dbBrands]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    const val = type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
-
-    setFormData(prev => ({
-      ...prev,
-      [name]: val,
-      // Auto-generate slug if name changes and slug is empty or matches previous auto-gen
-      ...(name === "name" ? { slug: value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") } : {})
-    }));
+    setColorways((prev) => [...prev, newColorway]);
+    setActiveColorwayId(newId);
+    toast.success("New colorway added. Configure its price, sizes, and images below.");
   };
 
-  const handleCategoryChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const categoryName = e.target.value;
-    const selectedCategory = categories.find(c => c.name === categoryName);
-    const categorySlug = selectedCategory?.slug || "";
-
-    setFormData(prev => ({
-      ...prev,
-      category: categoryName,
-      categorySlug: categorySlug,
-      brand: "", // Reset brand and type when category changes
-      type: ""
-    }));
-
-    if (categorySlug) {
-      try {
-        const featuresData = await categoryService.getFeatures(categorySlug);
-        const features = featuresData?.features || [];
-
-        setCategoryArchitecture({
-          subcategories: selectedCategory?.subcategories || [],
-          brands: selectedCategory?.brands || [],
-          features: features
-        });
-
-        // Auto-suggest features if available
-        if (features.length > 0) {
-          suggestFeatures(features);
-        }
-      } catch (error) {
-        console.error("Error fetching category architecture:", error);
-      }
-    } else {
-      setCategoryArchitecture({ subcategories: [], brands: [], features: [] });
+  const removeColorway = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (colorways.length <= 1) {
+      toast.error("A garment must have at least one colorway.");
+      return;
     }
-  };
-
-  const handleAddNewBrand = async () => {
-    if (!formData.categorySlug || !newBrandInput.trim()) return;
-
-    try {
-      const categoryData = await categoryService.getBySlug(formData.categorySlug);
-
-      if (categoryData) {
-        const currentBrands = categoryData.brands || [];
-        if (!currentBrands.includes(newBrandInput.trim())) {
-          const updatedBrands = [...currentBrands, newBrandInput.trim()];
-          await categoryService.update(formData.categorySlug, { brands: updatedBrands });
-          await queryClient.invalidateQueries({ queryKey: ['categories'] });
-
-          setCategoryArchitecture(prev => ({ ...prev, brands: updatedBrands }));
-          setFormData(prev => ({ ...prev, brand: newBrandInput.trim() }));
-          setNewBrandInput("");
-          setIsAddingNewBrand(false);
-          toast.success(`Brand "${newBrandInput}" added to ${formData.category}`);
-        } else {
-          toast.error("Brand already exists in this category");
-        }
-      }
-    } catch (error) {
-      const err = error as Error;
-      console.error("Error adding brand:", err);
-      toast.error(err.message || "Failed to add new brand");
+    const filtered = colorways.filter((cw) => cw.id !== id);
+    setColorways(filtered);
+    if (activeColorwayId === id) {
+      setActiveColorwayId(filtered[0].id);
     }
-  };
-
-  const toggleAllocCategory = (slug: string) => {
-    setAllocCategorySlugs(prev => prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]);
-  };
-
-  const handleCreateGlobalBrand = async () => {
-    if (!newGlobalBrand.trim()) { toast.error('Brand name required'); return; }
-    try {
-      const targetSlugs = allocCategorySlugs.length > 0 ? allocCategorySlugs : (formData.categorySlug ? [formData.categorySlug] : []);
-
-      if (targetSlugs.length > 0) {
-        for (const slug of targetSlugs) {
-          const cat = await categoryService.getBySlug(slug);
-          if (!cat) continue;
-          const current = cat.brands || [];
-          if (!current.includes(newGlobalBrand.trim())) {
-            const updated = [...current, newGlobalBrand.trim()];
-            await categoryService.update(slug, { brands: updated });
-          }
-        }
-
-        await queryClient.invalidateQueries({ queryKey: ['categories'] });
-        const cats = await categoryService.getAll();
-        const fromCategories = cats.flatMap((c: Category) => c.brands || []);
-        const unique = Array.from(new Set([...fromCategories]));
-        setAllBrands(unique);
-        toast.success(`Brand "${newGlobalBrand}" created and allocated`);
-      } else {
-        // No category selected - create brand locally so it appears in dropdown
-        setAllBrands(prev => Array.from(new Set([...(prev || []), newGlobalBrand.trim()])));
-        toast.success(`Brand "${newGlobalBrand}" created`);
-      }
-
-      setFormData(prev => ({ ...prev, brand: newGlobalBrand.trim() }));
-      setNewGlobalBrand("");
-      setAllocCategorySlugs([]);
-    } catch (error) {
-      const err = error as Error;
-      console.error('Error creating global brand:', err);
-      toast.error(err.message || 'Failed to create global brand');
+    if (previewActiveSwatchId === id) {
+      setPreviewActiveSwatchId(filtered[0].id);
     }
+    toast.info("Colorway removed.");
   };
 
-  const handleAddNewType = async () => {
-    if (!formData.categorySlug || !newTypeInput.trim() || !newTypeSlugInput.trim()) return;
-
-    try {
-      const categoryData = await categoryService.getBySlug(formData.categorySlug);
-
-      if (categoryData) {
-        const currentSubs = categoryData.subcategories || [];
-        if (!currentSubs.some((s: { name: string; slug: string }) => s.slug === newTypeSlugInput.trim())) {
-          const updatedSubs = [...currentSubs, { name: newTypeInput.trim(), slug: newTypeSlugInput.trim() }];
-          await categoryService.update(formData.categorySlug, { subcategories: updatedSubs });
-
-          setCategoryArchitecture(prev => ({ ...prev, subcategories: updatedSubs }));
-          setFormData(prev => ({ ...prev, type: newTypeInput.trim() }));
-          setNewTypeInput("");
-          setNewTypeSlugInput("");
-          setIsAddingNewType(false);
-          toast.success(`Subcategory "${newTypeInput}" added to ${formData.category}`);
-        } else {
-          toast.error("Subcategory already exists in this category");
-        }
-      }
-    } catch (error) {
-      const err = error as Error;
-      console.error("Error adding subcategory:", err);
-      toast.error(err.message || "Failed to add new subcategory");
+  // Multiple Descriptions for active colorway
+  const activeDescriptions = useMemo(() => {
+    if (activeColorway?.descriptions && activeColorway.descriptions.length > 0) {
+      return activeColorway.descriptions;
     }
-  };
+    if (activeColorway?.description) {
+      return [activeColorway.description];
+    }
+    return [""];
+  }, [activeColorway?.descriptions, activeColorway?.description]);
 
-  const suggestFeatures = (features: string[]) => {
-    if (!features || features.length === 0) return;
-    setFormData(prev => {
-      const currentKeys = prev.specs.map(s => s.key.toLowerCase());
-      const newSpecs = [...prev.specs];
-
-      features.forEach(f => {
-        if (!currentKeys.includes(f.toLowerCase())) {
-          if (newSpecs.length === 1 && !newSpecs[0].key && !newSpecs[0].value) {
-            newSpecs[0] = { key: f, value: "" };
-          } else {
-            newSpecs.push({ key: f, value: "" });
-          }
-        }
-      });
-
-      return { ...prev, specs: newSpecs };
+  const addDescriptionToActiveColorway = () => {
+    const nextDescs = [...activeDescriptions, ""];
+    updateActiveColorway({
+      descriptions: nextDescs,
+      description: nextDescs.filter(Boolean).join("\n\n")
     });
-    toast.info(`Suggested features added to specifications`);
   };
 
-  const handleTypeChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | string) => {
-    const newType = typeof e === 'string' ? e : e.target.value;
-    setFormData(prev => ({ ...prev, type: newType }));
+  const updateColorwayDescriptionAt = (index: number, val: string) => {
+    const nextDescs = [...activeDescriptions];
+    nextDescs[index] = val;
+    updateActiveColorway({
+      descriptions: nextDescs,
+      description: nextDescs.filter(Boolean).join("\n\n")
+    });
+  };
 
-    if (formData.categorySlug && newType) {
-      try {
-        const data = await categoryService.getFeatures(formData.categorySlug);
-        if (data && data.typeFeatures && data.typeFeatures[newType]) {
-          suggestFeatures(data.typeFeatures[newType]);
-        }
-      } catch (error) {
-        console.error("Error fetching type features:", error);
+  const removeColorwayDescriptionAt = (index: number) => {
+    if (activeDescriptions.length <= 1) {
+      updateActiveColorway({
+        descriptions: [""],
+        description: ""
+      });
+      return;
+    }
+    const nextDescs = activeDescriptions.filter((_, i) => i !== index);
+    updateActiveColorway({
+      descriptions: nextDescs,
+      description: nextDescs.filter(Boolean).join("\n\n")
+    });
+  };
+
+  // ATELIER BRAND CRUD
+  const allBrandOptions = useMemo(() => {
+    const list = [...dbBrands];
+    const defaultNames = ["Luma Threads", "Pistola Denim", "Atelier Studio"];
+    defaultNames.forEach((def) => {
+      if (!list.some((b: any) => b.name === def)) {
+        list.push({
+          id: def.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+          name: def,
+          slug: def.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+          is_active: true,
+        });
       }
-    }
-  };
+    });
+    return list;
+  }, [dbBrands]);
 
-  const handleAddCategory = async () => {
-    if (!isAdmin) {
-      toast.error("You do not have permission to add categories.");
-      return;
-    }
-    if (!newCategory.trim()) return;
-    const slug = newCategory.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    if (categories.some(c => c.slug === slug)) {
-      toast.error("Category already exists");
-      return;
-    }
-
-    setLoading(true);
+  const handleCreateBrand = async () => {
+    if (!newBrandInput.trim()) return;
     try {
-      let iconUrl = newCategoryIcon || "📦";
-      if (newCategoryIconFile) {
-        iconUrl = await uploadService.uploadImage(newCategoryIconFile, "categories/icons");
-      }
-
-      await categoryService.create({ name: newCategory, slug, icon: iconUrl });
-      await queryClient.invalidateQueries({ queryKey: ['categories'] });
-
-      setNewCategory("");
-      setNewCategoryIcon("📦");
-      setNewCategoryIconFile(null);
-      toast.success("Category added and saved");
-    } catch (error) {
-      toast.error("Failed to add category");
+      setIsSavingBrand(true);
+      const created = await brandService.createBrand({ name: newBrandInput.trim() });
+      await queryClient.invalidateQueries({ queryKey: ["brands"] });
+      const brandName = created.name || newBrandInput.trim();
+      setBrand(brandName);
+      setNewBrandInput("");
+      setIsAddingNewBrand(false);
+      toast.success(`Brand "${brandName}" created successfully!`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to create brand.");
     } finally {
-      setLoading(false);
+      setIsSavingBrand(false);
+    }
+  };
+
+  const handleDeleteBrand = async () => {
+    if (!brand) return;
+    const brandObj = dbBrands.find((b: any) => b.name === brand || b.slug === brand);
+    const slugToDelete = brandObj?.slug || brand.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    if (!window.confirm(`Are you sure you want to delete brand "${brand}"?`)) return;
+    try {
+      await brandService.deleteBrand(slugToDelete);
+      await queryClient.invalidateQueries({ queryKey: ["brands"] });
+      setBrand("Luma Threads");
+      toast.success(`Brand "${brand}" deleted.`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete brand.");
+    }
+  };
+
+  // MERCHANDISING BADGE CRUD
+  const handleCreateBadge = () => {
+    const trimmed = newBadgeTitle.trim().toUpperCase();
+    if (!trimmed) return;
+    if (!badges.includes(trimmed)) {
+      setBadges((prev) => [...prev, trimmed]);
+    }
+    setBadge(trimmed);
+    setNewBadgeTitle("");
+    setShowAddBadgeInput(false);
+    toast.success(`Merchandising badge "${trimmed}" added!`);
+  };
+
+  const handleDeleteBadge = (badgeToDelete: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setBadges((prev) => prev.filter((b) => b !== badgeToDelete));
+    if (badge === badgeToDelete) {
+      setBadge("");
+    }
+    toast.info(`Badge "${badgeToDelete}" removed.`);
+  };
+
+  // GENDER / SILHOUETTE CRUD
+  const handleCreateGender = () => {
+    const trimmed = newGenderTitle.trim();
+    if (!trimmed) return;
+    if (!genderOptions.includes(trimmed)) {
+      setGenderOptions((prev) => [...prev, trimmed]);
+    }
+    setGender(trimmed);
+    setNewGenderTitle("");
+    setShowAddGenderInput(false);
+    toast.success(`Silhouette "${trimmed}" added!`);
+  };
+
+  const handleDeleteGender = (optToDelete: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (genderOptions.length <= 1) {
+      toast.error("At least one silhouette option is required.");
+      return;
+    }
+    const nextOptions = genderOptions.filter((g) => g !== optToDelete);
+    setGenderOptions(nextOptions);
+    if (gender === optToDelete) {
+      setGender(nextOptions[0] || "");
+    }
+    toast.info(`Silhouette "${optToDelete}" removed.`);
+  };
+
+  // MULTIPLE IMAGES PER COLORWAY HELPERS
+  const handleAddImageUrls = () => {
+    if (!newImageUrlInput.trim()) return;
+    const urls = newImageUrlInput
+      .split(/[\n,]+/)
+      .map((u) => u.trim())
+      .filter((u) => u.length > 0);
+
+    if (urls.length === 0) return;
+
+    let nextPrimary = activeColorway.primaryImage;
+    let nextHover = activeColorway.hoverImage;
+    const nextGallery = [...(activeColorway.galleryImages || [])];
+
+    urls.forEach((url) => {
+      if (!nextPrimary) {
+        nextPrimary = url;
+      } else if (!nextHover) {
+        nextHover = url;
+      } else {
+        nextGallery.push(url);
+      }
+    });
+
+    updateActiveColorway({
+      primaryImage: nextPrimary,
+      hoverImage: nextHover,
+      galleryImages: nextGallery,
+    });
+
+    setNewImageUrlInput("");
+    setShowAddUrlInput(false);
+    toast.success(`Added ${urls.length} picture(s) to ${activeColorway.name}!`);
+  };
+
+  const handleMultiFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    Array.from(files).forEach((file) => {
+      processImageFile(file, "gallery");
+    });
+    e.target.value = "";
+  };
+
+  const setAsPrimaryImage = (targetUrl: string) => {
+    if (!targetUrl || targetUrl === activeColorway.primaryImage) return;
+    const currentPrimary = activeColorway.primaryImage;
+    const filteredGallery = (activeColorway.galleryImages || []).filter((u) => u !== targetUrl);
+    const newGallery = currentPrimary ? [currentPrimary, ...filteredGallery] : filteredGallery;
+    const newHover = activeColorway.hoverImage === targetUrl ? "" : activeColorway.hoverImage;
+
+    updateActiveColorway({
+      primaryImage: targetUrl,
+      hoverImage: newHover,
+      galleryImages: newGallery,
+    });
+    toast.success(`Set as main card swatch photo for ${activeColorway.name}!`);
+  };
+
+  const setAsHoverImage = (targetUrl: string) => {
+    if (!targetUrl || targetUrl === activeColorway.hoverImage) return;
+    const currentHover = activeColorway.hoverImage;
+    const filteredGallery = (activeColorway.galleryImages || []).filter((u) => u !== targetUrl);
+    const newGallery = currentHover ? [currentHover, ...filteredGallery] : filteredGallery;
+
+    updateActiveColorway({
+      hoverImage: targetUrl,
+      galleryImages: newGallery,
+    });
+    toast.success(`Set as hover lookbook photo for ${activeColorway.name}!`);
+  };
+
+  const removeColorwayImage = (
+    targetUrl: string,
+    type: "primary" | "hover" | "gallery",
+    galleryIndex?: number
+  ) => {
+    if (type === "primary") {
+      updateActiveColorway({ primaryImage: "" });
+      toast.info("Cleared primary image");
+    } else if (type === "hover") {
+      updateActiveColorway({ hoverImage: "" });
+      toast.info("Cleared hover image");
+    } else {
+      const nextGallery = (activeColorway.galleryImages || []).filter(
+        (u, idx) => (galleryIndex !== undefined ? idx !== galleryIndex : u !== targetUrl)
+      );
+      updateActiveColorway({ galleryImages: nextGallery });
+      toast.info("Removed angle image");
+    }
+  };
+
+  // CATEGORY & SUBCATEGORY CRUD
+  const handleCreateCategory = async () => {
+    if (!newCategoryTitle.trim()) return;
+    try {
+      setIsSavingCategory(true);
+      const res = await categoryService.createCategory({ title: newCategoryTitle.trim() });
+      await queryClient.invalidateQueries({ queryKey: ["categories"] });
+      const createdHandle = res.handle || res.slug || newCategoryTitle.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      setSelectedCategory(createdHandle);
+      setSelectedSubCategory("");
+      setNewCategoryTitle("");
+      setShowAddCategoryInput(false);
+      toast.success(`Category "${newCategoryTitle.trim()}" created!`);
+    } catch (err) {
+      toast.error("Failed to create category");
+    } finally {
+      setIsSavingCategory(false);
     }
   };
 
   const handleDeleteCategory = async () => {
-    const selectedCategory = categories.find(c => c.name === formData.category);
-    if (!selectedCategory) {
-      toast.error("Please select a category to delete");
-      return;
-    }
-
-    setLoading(true);
+    if (!selectedCategory) return;
+    const catNameToDelete = currentCategoryObj?.title || selectedCategory;
+    if (!window.confirm(`Are you sure you want to delete category "${catNameToDelete}"?`)) return;
     try {
-      await categoryService.delete(selectedCategory.slug);
-      await categoryService.deleteFeatures(selectedCategory.slug);
-
-      toast.success(`Category "${selectedCategory.name}" and all related products deleted`);
-      setFormData(prev => ({ ...prev, category: "", categorySlug: "" }));
-      setShowDeleteCategoryConfirm(false);
-    } catch (error) {
+      await categoryService.deleteCategory(currentCategoryObj?.id || selectedCategory);
+      await queryClient.invalidateQueries({ queryKey: ["categories"] });
+      toast.success(`Category "${catNameToDelete}" deleted!`);
+      const remaining = categories.filter((c: any) => (c.handle || c.slug || String(c.id)) !== selectedCategory);
+      if (remaining.length > 0) {
+        setSelectedCategory(remaining[0].handle || remaining[0].slug || String(remaining[0].id));
+      } else {
+        setSelectedCategory("");
+      }
+      setSelectedSubCategory("");
+    } catch (err) {
       toast.error("Failed to delete category");
+    }
+  };
+
+  const handleCreateSubCategory = async () => {
+    if (!newSubCategoryTitle.trim()) return;
+    try {
+      setIsSavingSubCategory(true);
+      const parentId = currentCategoryObj?.id || selectedCategory;
+      const res = await categoryService.createSubCategory({
+        title: newSubCategoryTitle.trim(),
+        category_id: parentId
+      });
+      await queryClient.invalidateQueries({ queryKey: ["categories"] });
+      const createdHandle = res.handle || res.slug || newSubCategoryTitle.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      setSelectedSubCategory(createdHandle);
+      setNewSubCategoryTitle("");
+      setShowAddSubCategoryInput(false);
+      toast.success(`SubCategory "${newSubCategoryTitle.trim()}" added to ${currentCategoryObj?.title || selectedCategory}!`);
+    } catch (err) {
+      toast.error("Failed to create subcategory");
     } finally {
-      setLoading(false);
+      setIsSavingSubCategory(false);
     }
   };
 
-  const handleDeleteBrandFromCategory = async () => {
-    if (!formData.categorySlug || !formData.brand) {
-      toast.error("Please select a category and brand to delete");
-      return;
-    }
-
+  const handleDeleteSubCategory = async () => {
+    if (!selectedSubCategory) return;
+    const selectedSubObj = availableSubcategories.find((s: any) => (s.handle || s.slug || String(s.id)) === selectedSubCategory);
+    const subTitle = selectedSubObj?.title || selectedSubCategory;
+    if (!window.confirm(`Are you sure you want to delete subcategory "${subTitle}"?`)) return;
     try {
-      const categoryData = await categoryService.getBySlug(formData.categorySlug);
-
-      if (categoryData) {
-        const currentBrands = categoryData.brands || [];
-        const updatedBrands = currentBrands.filter((b: string) => b !== formData.brand);
-
-        await categoryService.update(formData.categorySlug, { brands: updatedBrands });
-
-        setCategoryArchitecture(prev => ({ ...prev, brands: updatedBrands }));
-        setFormData(prev => ({ ...prev, brand: updatedBrands.length > 0 ? updatedBrands[0] : "" }));
-        setShowDeleteBrandConfirm(false);
-        toast.success(`Brand "${formData.brand}" deleted from category`);
-      }
-    } catch (error: unknown) {
-      console.error("Error deleting brand:", error);
-      toast.error((error as Error).message || "Failed to delete brand");
+      await categoryService.deleteSubCategory(selectedSubObj?.id || selectedSubCategory);
+      await queryClient.invalidateQueries({ queryKey: ["categories"] });
+      toast.success(`SubCategory "${subTitle}" deleted!`);
+      setSelectedSubCategory("");
+    } catch (err) {
+      toast.error("Failed to delete subcategory");
     }
   };
 
-  const handleAddBrandToCategory = async () => {
-    if (!formData.categorySlug || !formData.brand.trim()) {
-      toast.error("Please select a category and enter a brand name");
-      return;
-    }
-
+  // COLLECTION CRUD
+  const handleCreateCollection = async () => {
+    if (!newCollectionTitle.trim()) return;
     try {
-      const categoryData = await categoryService.getBySlug(formData.categorySlug);
-      if (!categoryData) {
-        toast.error("Category not found");
-        return;
-      }
-
-      const currentBrands = categoryData.brands || [];
-      if (currentBrands.includes(formData.brand.trim())) {
-        toast.error("Brand already exists in this category");
-        return;
-      }
-
-      const newBrands = [...currentBrands, formData.brand.trim()];
-      await categoryService.update(formData.categorySlug, { brands: newBrands });
-
-      // Also try to create a global brand record if it doesn't exist
-      try {
-        await brandService.createBrand({
-          name: formData.brand.trim(),
-          slug: formData.brand.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-          is_active: true
-        });
-        await queryClient.invalidateQueries({ queryKey: ['brands'] });
-      } catch (e) {
-        // Ignore if brand already exists globally
-        console.log("Brand might already exist globally:", e);
-      }
-
-      setCategoryArchitecture(prev => ({ ...prev, brands: newBrands }));
-      toast.success(`Brand "${formData.brand}" added to category`);
-    } catch (error: unknown) {
-      console.error("Error adding brand to category:", error);
-      toast.error((error as Error).message || "Failed to add brand to category");
-    }
-  };
-
-  const handleDeleteType = async () => {
-    if (!formData.categorySlug || !formData.type) {
-      toast.error("Please select a category and type to delete");
-      return;
-    }
-
-    try {
-      const categoryData = await categoryService.getBySlug(formData.categorySlug);
-
-      if (categoryData) {
-        const currentTypes = categoryData.subcategories || [];
-        const newTypes = currentTypes.filter((t: { name: string; slug: string }) => t.name !== formData.type && t.slug !== formData.type);
-
-        await categoryService.update(formData.categorySlug, { subcategories: newTypes });
-
-        setCategoryArchitecture(prev => ({ ...prev, subcategories: prev.subcategories.filter(s => s.name !== formData.type) }));
-        setFormData(prev => ({ ...prev, type: newTypes.length > 0 ? newTypes[0].name : "" }));
-        setShowDeleteTypeConfirm(false);
-        toast.success(`Product type "${formData.type}" deleted from category`);
-      }
-    } catch (error: unknown) {
-      console.error("Error deleting type:", error);
-      toast.error((error as Error).message || "Failed to delete type");
-    }
-  };
-
-  const handleAddType = async () => {
-    if (!formData.categorySlug || !formData.type.trim()) {
-      toast.error("Please select a category and enter a type name");
-      return;
-    }
-
-    try {
-      const categoryData = await categoryService.getBySlug(formData.categorySlug);
-      if (!categoryData) {
-        toast.error("Category not found");
-        return;
-      }
-
-      const currentTypes = categoryData.subcategories || [];
-      if (currentTypes.some((t: { name: string }) => t.name === formData.type.trim())) {
-        toast.error("Type already exists in this category");
-        return;
-      }
-
-      const newTypeObj = { name: formData.type.trim(), slug: formData.type.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-") };
-      const newTypes = [...currentTypes, newTypeObj];
-
-      await categoryService.update(formData.categorySlug, { subcategories: newTypes });
-
-      setCategoryArchitecture(prev => ({ ...prev, subcategories: newTypes }));
-      toast.success(`Product type "${formData.type}" added to category`);
-    } catch (error: unknown) {
-      console.error("Error adding type:", error);
-      toast.error((error as Error).message || "Failed to add type");
-    }
-  };
-
-
-
-  const handleColorToggle = (color: { name: string; hex: string }) => {
-    setFormData(prev => {
-      const exists = prev.colors.find(c => c.name === color.name);
-      if (exists) {
-        return { ...prev, colors: prev.colors.filter(c => c.name !== color.name) };
-      } else {
-        return { ...prev, colors: [...prev.colors, color] };
-      }
-    });
-  };
-
-  const handleCollectionToggle = (collection: string) => {
-    setFormData(prev => {
-      const exists = prev.collections.includes(collection);
-      if (exists) {
-        return { ...prev, collections: prev.collections.filter(c => c !== collection) };
-      } else {
-        return { ...prev, collections: [...prev.collections, collection] };
-      }
-    });
-  };
-
-  const handleAddCollection = async () => {
-    if (!newCollectionInput.trim()) return;
-    try {
-      await collectionService.create(newCollectionInput.trim());
-      await queryClient.invalidateQueries({ queryKey: ['collections'] });
-      setNewCollectionInput("");
-      toast.success(`Collection "${newCollectionInput}" added`);
-    } catch (error) {
-      toast.error("Failed to add collection");
-    }
-  };
-
-  const handleDeleteCollection = async (id: string, name: string) => {
-    setPendingDeleteCollection({ id, name });
-  };
-
-  const executeDeleteCollection = async () => {
-    if (!pendingDeleteCollection) return;
-    const { id, name } = pendingDeleteCollection;
-
-    try {
-      await collectionService.delete(id);
+      setIsSavingCollection(true);
+      const newCol = await collectionService.create(newCollectionTitle.trim());
       await queryClient.invalidateQueries({ queryKey: ["collections"] });
-      await queryClient.invalidateQueries({ queryKey: ["collections", "public"] });
+      const colKey = newCol.handle || newCol.slug || String(newCol.id);
+      setSelectedCollections(prev => [...prev, colKey]);
+      setNewCollectionTitle("");
+      setShowAddCollectionInput(false);
+      toast.success(`Collection "${newCol.title || newCollectionTitle.trim()}" created!`);
+    } catch (err) {
+      toast.error("Failed to create collection");
+    } finally {
+      setIsSavingCollection(false);
+    }
+  };
 
-      setFormData((prev) => ({ ...prev, collections: prev.collections.filter((c) => c !== name) }));
-      toast.success(`Collection "${name}" deleted`);
-      setPendingDeleteCollection(null);
-    } catch (error) {
+  const handleDeleteCollection = async (col: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const colName = col.title || col.name || "Collection";
+    if (!window.confirm(`Are you sure you want to delete collection "${colName}"?`)) return;
+    try {
+      await collectionService.delete(col.id || col.handle);
+      await queryClient.invalidateQueries({ queryKey: ["collections"] });
+      const colKey = col.handle || col.slug || String(col.id);
+      setSelectedCollections(prev => prev.filter(c => c !== colKey));
+      toast.success(`Collection "${colName}" deleted!`);
+    } catch (err) {
       toast.error("Failed to delete collection");
     }
   };
 
-  const handleCategoryIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setNewCategoryIconFile(e.target.files[0]);
-      setNewCategoryIcon(URL.createObjectURL(e.target.files[0]));
-    }
+  // DENIM TAILORING SPECIFICATIONS ADD & DELETE
+  const handleAddDenimSpec = (label?: string, value?: string) => {
+    const specLabel = (label || newDenimSpecLabel).trim();
+    const specValue = (value || newDenimSpecValue).trim() || "Standard";
+    if (!specLabel) return;
+    setDenimSpecs(prev => [
+      ...prev,
+      { id: `spec-${Date.now()}`, label: specLabel, value: specValue, type: "custom" }
+    ]);
+    setNewDenimSpecLabel("");
+    setNewDenimSpecValue("");
+    setShowAddDenimSpecInput(false);
+    toast.success(`Tailoring specification "${specLabel}: ${specValue}" added!`);
   };
 
-  const handleMainImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setMainImageFile(e.target.files[0]);
-      setFormData(prev => ({ ...prev, image: URL.createObjectURL(e.target.files![0]) }));
-    }
+  const handleDeleteDenimSpec = (specId: string) => {
+    setDenimSpecs(prev => prev.filter(s => s.id !== specId));
+    toast.success("Tailoring specification removed.");
   };
 
-  const handleBulkImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      if (formData.images.length + files.length > 8) {
-        toast.error("You can only upload up to 8 images in total.");
+  const handleUpdateDenimSpec = (specId: string, value: string) => {
+    setDenimSpecs(prev => prev.map(s => s.id === specId ? { ...s, value } : s));
+    const updated = denimSpecs.find(s => s.id === specId);
+    if (updated?.type === "fit") setFit(value);
+    if (updated?.type === "rise") setRise(value);
+    if (updated?.type === "wash") setWash(value);
+  };
+
+  // Colorway-specific size toggle
+  const toggleSizeForActiveColorway = (sz: string) => {
+    if (!activeColorway) return;
+    const currentSizes = activeColorway.sizes || [];
+    if (currentSizes.includes(sz)) {
+      if (currentSizes.length === 1) {
+        toast.warning("This colorway must have at least one size.");
         return;
       }
-      setBulkImageFiles(prev => [...prev, ...files]);
-      const urls = files.map(f => URL.createObjectURL(f));
-      setFormData(prev => ({ ...prev, images: [...prev.images, ...urls] }));
+      updateActiveColorway({ sizes: currentSizes.filter((s) => s !== sz) });
+    } else {
+      updateActiveColorway({ sizes: [...currentSizes, sz] });
     }
   };
 
-  const handleSingleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      if (formData.images.length >= 8) {
-        toast.error("You can only upload up to 8 images.");
-        return;
-      }
-      const file = e.target.files[0];
-      setBulkImageFiles(prev => [...prev, file]);
-      const url = URL.createObjectURL(file);
-      setFormData(prev => ({ ...prev, images: [...prev.images, url] }));
-    }
+  const applySizePresetToActiveColorway = (presetKey: keyof typeof SIZE_PRESETS) => {
+    updateActiveColorway({ sizes: [...SIZE_PRESETS[presetKey].sizes] });
+    toast.success(`Applied ${SIZE_PRESETS[presetKey].label} size preset to ${activeColorway.name}`);
   };
 
-  const handle3DModelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setModel3DFile(e.target.files[0]);
-      toast.success("3D Model selected");
+  const addCustomSizeToActiveColorway = () => {
+    const trimmed = customSizeInput.trim().toUpperCase();
+    if (!trimmed) return;
+    const currentSizes = activeColorway.sizes || [];
+    if (currentSizes.includes(trimmed)) {
+      toast.error("Size already exists in this colorway");
+      return;
     }
+    updateActiveColorway({ sizes: [...currentSizes, trimmed] });
+    setCustomSizeInput("");
   };
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-
-    if (!formData.name.trim()) {
-      toast.error("Product name is required.");
+  // ROBUST IMAGE UPLOAD HANDLER WITH INSTANT PREVIEW & SERVER PERSISTENCE
+  const processImageFile = async (file: File, target: "primary" | "hover" | "gallery") => {
+    if (!file || !file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file (PNG, JPG, WEBP).");
       return;
     }
 
-    if (!formData.slug.trim()) {
-      formData.slug = formData.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    // 1. Instant local preview via FileReader
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const instantPreviewUrl = e.target?.result as string;
+      if (target === "primary") {
+        updateActiveColorway({ primaryImage: instantPreviewUrl });
+      } else if (target === "hover") {
+        updateActiveColorway({ hoverImage: instantPreviewUrl });
+      } else {
+        updateActiveColorway({
+          galleryImages: [...(activeColorway.galleryImages || []), instantPreviewUrl],
+        });
+      }
+    };
+    reader.readAsDataURL(file);
+
+    // 2. Upload to Django backend media storage in background
+    try {
+      setUploadingTarget(target);
+      toast.info(`Uploading image to media server...`);
+      const uploadedUrl = await uploadService.uploadImage(file, "products/garments");
+      if (target === "primary") {
+        updateActiveColorway({ primaryImage: uploadedUrl });
+        toast.success(`Main studio photo uploaded for ${activeColorway.name}`);
+      } else if (target === "hover") {
+        updateActiveColorway({ hoverImage: uploadedUrl });
+        toast.success(`Hover lookbook photo uploaded for ${activeColorway.name}`);
+      } else {
+        updateActiveColorway({
+          galleryImages: [...(activeColorway.galleryImages || []).filter((u) => !u.startsWith("data:")), uploadedUrl],
+        });
+        toast.success(`Gallery photo added`);
+      }
+    } catch (err) {
+      console.warn("Upload to backend storage warning, using local preview:", err);
+      toast.success("Image applied to garment view.");
+    } finally {
+      setUploadingTarget(null);
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>, target: "primary" | "hover" | "gallery") => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    if (target === "gallery" && files.length > 1) {
+      Array.from(files).forEach((f) => processImageFile(f, "gallery"));
+    } else {
+      processImageFile(files[0], target);
+    }
+    e.target.value = "";
+  };
+
+  // Drag and drop handlers
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, target: "primary" | "hover") => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (target === "primary") setIsDragOverPrimary(false);
+    if (target === "hover") setIsDragOverHover(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processImageFile(file, target);
+    }
+  };
+
+  // Category blueprint feature toggle
+  const addBlueprintFeature = (feat: string) => {
+    if (details.includes(feat)) {
+      toast.info("Feature already added to this garment.");
+      return;
+    }
+    setDetails((prev) => [...prev, feat]);
+    toast.success(`Added blueprint: "${feat}"`);
+  };
+
+  const removeDetailBullet = (idx: number) => {
+    setDetails(details.filter((_, i) => i !== idx));
+  };
+
+  const addCustomDetailBullet = () => {
+    if (!newDetailInput.trim()) return;
+    setDetails((prev) => [...prev, newDetailInput.trim()]);
+    setNewDetailInput("");
+  };
+
+  // Form Submission
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
+    if (!title.trim()) {
+      toast.error("Please enter a garment title");
+      return;
     }
 
-    if (!formData.brand?.trim()) {
-      formData.brand = "Luma Threads";
+    if (colorways.length === 0) {
+      toast.error("Please configure at least one colorway");
+      return;
     }
 
-    const priceNum = Number(formData.price.toString().replace(/,/g, ''));
-    if (!formData.price || isNaN(priceNum) || priceNum <= 0) {
-      toast.error("Please enter a valid numeric Price greater than 0.");
+    const defaultColorway = colorways[0];
+    const defaultPrice = parseFloat(defaultColorway.price);
+    if (isNaN(defaultPrice) || defaultPrice <= 0) {
+      toast.error("Please specify a valid price for the 1st colorway");
+      return;
+    }
+
+    if (!defaultColorway.primaryImage.trim()) {
+      toast.error("Please provide a primary image for the 1st colorway");
       return;
     }
 
     setLoading(true);
 
     try {
-      // Upload files
-      let mainImageUrl = formData.image;
-      if (mainImageFile) {
-        mainImageUrl = await uploadService.uploadImage(mainImageFile, "products/main");
-      }
+      const colorVariantsPayload = colorways.map((cw) => ({
+        color_name: cw.name.trim(),
+        color_hex: cw.hex.trim(),
+        price: parseFloat(cw.price) || defaultPrice,
+        primary_image: cw.primaryImage.trim(),
+        hover_image: (cw.hoverImage || cw.primaryImage).trim(),
+        images: [
+          cw.primaryImage.trim(),
+          ...(cw.hoverImage ? [cw.hoverImage.trim()] : []),
+          ...cw.galleryImages,
+        ],
+        sizes: cw.sizes,
+        description: cw.description.trim(),
+        descriptions: cw.descriptions && cw.descriptions.length > 0 ? cw.descriptions : [cw.description.trim()],
+        stock: parseInt(cw.stock, 10) || 50,
+      }));
 
-      const bulkImageUrls: string[] = [];
-      const existingBulkImages = formData.images.filter(img => !img.startsWith("blob:"));
-      bulkImageUrls.push(...existingBulkImages);
+      const swatchesPayload = colorways.map((cw) => ({
+        name: cw.name.trim(),
+        color: cw.hex.trim(),
+        handle: handle.trim() || title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        image: cw.primaryImage.trim(),
+        hoverImage: (cw.hoverImage || cw.primaryImage).trim(),
+        price: parseFloat(cw.price) || defaultPrice,
+        priceFormatted: `$${(parseFloat(cw.price) || defaultPrice).toFixed(2)}`,
+        sizes: cw.sizes,
+        description: cw.description.trim(),
+        descriptions: cw.descriptions && cw.descriptions.length > 0 ? cw.descriptions : [cw.description.trim()],
+      }));
 
-      for (const file of bulkImageFiles) {
-        const url = await uploadService.uploadImage(file, "products/gallery");
-        bulkImageUrls.push(url);
-      }
+      const customSpecsDetails = denimSpecs.filter(s => s.type === "custom").map(s => `${s.label}: ${s.value}`);
+      const finalDetails = Array.from(new Set([...details, ...customSpecsDetails]));
 
-      let model3DUrl = formData.model3D;
-      if (model3DFile) {
-        model3DUrl = await uploadService.uploadModel(model3DFile);
-      }
-
-      // Preparation
-      const detailedSpecs: Record<string, string> = {};
-      formData.specs.forEach(spec => {
-        if (spec.key.trim() && spec.value.trim()) {
-          detailedSpecs[spec.key.trim()] = spec.value.trim();
-        }
-      });
-
-      const keySpecifications = formData.keySpecifications.filter(s => s.trim() !== "");
-
-      // === CRITICAL FIX: Resolve Category and Brand IDs ===
-      const catObj = categories.find(c => c.slug === formData.categorySlug || c.name === formData.category);
-      const categoryId = catObj?.id || formData.categorySlug || formData.category;
-
-      let brandId: number | string | null = null;
-      const brandObj = dbBrands.find((b: { name: string; id?: number | string }) =>
-        b.name.toLowerCase() === formData.brand.toLowerCase()
-      );
-
-      if (brandObj?.id) {
-        brandId = brandObj.id;
-      } else {
-        // Auto-create brand if not found
-        try {
-          const newBrandResponse = await brandService.createBrand({
-            name: formData.brand.trim(),
-            slug: formData.brand.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-            is_active: true,
-          });
-          brandId = newBrandResponse.id;
-          await queryClient.invalidateQueries({ queryKey: ['brands'] });
-          toast.success(`New brand "${formData.brand}" created`);
-        } catch (brandErr) {
-          console.error("Brand creation failed:", brandErr);
-          brandId = formData.brand as unknown as number;
-        }
-      }
-
-      const productData = {
-        ...formData,
-        name: formData.name,
-        slug: formData.slug,
-        category: categoryId,
-        categorySlug: (formData.categorySlug || formData.category).toLowerCase(),
-        brand: brandId,
-        image: mainImageUrl,
-        images: bulkImageUrls,
-        model3D: model3DUrl,
-        model3DFrames: formData.model3DFrames || [],
-        price: priceNum,
-        originalPrice: formData.originalPrice ? Number(formData.originalPrice.toString().replace(/,/g, '')) : null,
-        discount: Number(formData.discount || 0),
-        stockCount: Number(formData.stockCount || 0),
-        rating: Number(formData.rating || 0),
-        reviews: Number(formData.reviews || 0),
-        specs: formData.specs.map(s => `${s.key}: ${s.value}`).filter(s => s.trim() !== ": "),
-        detailedSpecs,
-        details: formData.details,
-        keySpecifications,
+      const payload = {
+        title: title.trim(),
+        name: title.trim(),
+        handle: handle.trim() || title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        slug: handle.trim() || title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        price: defaultPrice,
+        image: defaultColorway.primaryImage.trim(),
+        hover_image: (defaultColorway.hoverImage || defaultColorway.primaryImage).trim(),
+        colorway: defaultColorway.name.trim(),
+        color: defaultColorway.hex.trim(),
+        sizes: defaultColorway.sizes,
+        description: defaultColorway.description.trim(),
+        category: selectedCategory,
+        category_id: currentCategoryObj?.id || selectedCategory,
+        subcategory: selectedSubCategory || undefined,
+        subcategory_id: selectedSubCategory || undefined,
+        collections: selectedCollections,
+        brand: brand.trim(),
+        brand_name: brand.trim(),
+        badge: badge.trim(),
+        details: finalDetails,
+        size_and_fit: sizeAndFit.trim(),
+        sizeAndFit: sizeAndFit.trim(),
+        care: care.trim(),
+        fit: fit,
+        rise: isDenimOrBottoms ? rise : "",
+        wash: isDenimOrBottoms ? wash : "",
+        gender: gender,
+        stock: parseInt(defaultColorway.stock, 10) || 50,
+        is_active: isActive,
+        is_featured: isFeatured,
+        color_variants: colorVariantsPayload,
+        swatches: swatchesPayload,
       };
 
-      console.log("✅ Final data being sent to backend:", productData);
+      console.log("Submitting Color-First Garment to backend:", payload);
+      const result = await productService.create(payload);
 
-      await productService.create(productData);
-      await queryClient.invalidateQueries({ queryKey: ['products'] });
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      await queryClient.invalidateQueries({ queryKey: ["brands"] });
+      await queryClient.invalidateQueries({ queryKey: ["categories"] });
 
-      toast.success("Product added successfully!");
-      setSuccess(true);
-
+      toast.success(`Garment "${title}" published with ${colorways.length} colorways!`);
       setTimeout(() => {
         navigate("/admin/products");
-      }, 1800);
-
-    } catch (error: unknown) {
-      console.error("Error adding product:", error);
-      const axiosError = error as { response?: { data?: Record<string, any> }; message?: string };
-      let errorMsg = "Failed to add product";
-      if (axiosError?.response?.data) {
-        const d = axiosError.response.data;
-        if (typeof d === 'string') {
-          errorMsg = d;
-        } else if (typeof d === 'object') {
-          const msgs = Object.entries(d).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`);
-          if (msgs.length > 0) errorMsg = msgs.join(' | ');
-        }
-      } else if (axiosError.message) {
-        errorMsg = axiosError.message;
-      }
-      toast.error(errorMsg);
+      }, 1200);
+    } catch (err: any) {
+      console.error("Failed to create product:", err);
+      const errMsg =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        "Failed to save garment to backend database";
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleArrayChange = (index: number, value: string, type: "specs" | "images", field?: "key" | "value") => {
-    if (type === "specs" && field) {
-      const newSpecs = [...formData.specs];
-      newSpecs[index] = { ...newSpecs[index], [field]: value };
-      setFormData(prev => ({ ...prev, specs: newSpecs }));
-    } else if (type === "images") {
-      const newImages = [...formData.images];
-      newImages[index] = value;
-      setFormData(prev => ({ ...prev, images: newImages }));
-    }
-  };
-
-  const addArrayItem = (type: "specs" | "images") => {
-    const newItem = type === "specs" ? { key: "", value: "" } : "";
-    setFormData(prev => ({ ...prev, [type]: [...prev[type], newItem] }));
-  };
-
-  const removeArrayItem = (index: number, type: "specs" | "images") => {
-    if (type === "images") {
-      // If it's a blob URL, we might want to remove it from bulkImageFiles too
-      // but for simplicity we'll just filter the display array
-    }
-    const newArray = formData[type].filter((_, i) => i !== index);
-    setFormData(prev => ({ ...prev, [type]: newArray }));
-  };
-
-  const getBusinessIcon = (category?: string) => {
-    switch (category) {
-      case "Electronics & Technology": return "🔌";
-      case "Clothing & Fashion": return "👗";
-      case "Cosmetics & Beauty": return "💄";
-      case "Grocery & Food": return "🛒";
-      case "Home, Furniture & Garden": return "🏡";
-      case "Cafes & Coffee Shops": return "☕";
-      case "Hotels & Lodging": return "🏨";
-      case "Pet Supplies": return "🐾";
-      case "Toys & Hobbies": return "🧸";
-      case "Sports & Outdoors": return "⚽";
-      case "Automotive & Motorcycle": return "🏎️";
-      case "Health & Wellness": return "🌿";
-      case "Baby & Maternity": return "👶";
-      case "Office & School Supplies": return "📚";
-      case "Jewelry & Watches": return "💎";
-      case "Books, Music & Media": return "🎵";
-      case "Tools & Home Improvement": return "🛠️";
-      case "Luggage & Travel Accessories": return "🧳";
-      case "Pharmacy & Medical Supplies": return "💊";
-      default: return "🏢";
-    }
-  };
-
-  if (success) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
-        <div className="text-center space-y-4 animate-in fade-in zoom-in duration-500">
-          <div className="w-20 h-20 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 size={40} className="animate-bounce" />
-          </div>
-          <h1 className="text-3xl font-display font-bold">Product Created!</h1>
-          <p className="text-muted-foreground">Redirecting you back to the dashboard...</p>
-        </div>
-      </div>
-    );
-  }
+  const isDenimOrBottoms = useMemo(() => {
+    const cat = selectedCategory.toLowerCase();
+    return cat.includes("denim") || cat.includes("pant") || cat.includes("jean") || cat.includes("bottom");
+  }, [selectedCategory]);
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 min-h-full pb-20 lg:pb-0" ref={containerRef}>
-      {!showPreview && (
-        <div className="sticky top-0 lg:top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border shadow-sm">
-          <div className="neo-container flex items-center justify-between h-12 overflow-x-auto no-scrollbar">
-            <div className="flex items-center gap-4 sm:gap-8">
-              {sections.map(section => (
-                <button
-                  key={section.id}
-                  type="button"
-                  onClick={() => scrollToSection(section.id)}
-                  className={`text-[10px] sm:text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all relative py-4
-                    ${activeSection === section.id ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  {section.label}
-                  {activeSection === section.id && (
-                    <motion.div
-                      layoutId="activeSection"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full"
-                    />
-                  )}
-                </button>
-              ))}
+    <div className="flex-1 min-h-screen bg-muted/30 pb-28 lg:pb-16 text-foreground antialiased">
+      {/* TOP STICKY BAR: ADAPTIVE TO ALL SCREEN SIZES */}
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border shadow-xs px-3 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <button
+            type="button"
+            onClick={() => navigate("/admin/products")}
+            className="p-1.5 sm:p-2 hover:bg-muted rounded-xl transition-colors text-muted-foreground hover:text-foreground shrink-0"
+            title="Back to products"
+          >
+            <ChevronLeft size={18} className="sm:w-5 sm:h-5" />
+          </button>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-1.5 sm:px-2 py-0.5 rounded-md truncate">
+                Atelier Suite
+              </span>
+              <span className="text-[11px] sm:text-xs text-muted-foreground hidden sm:inline">• Add Garment</span>
             </div>
-            <div className="flex items-center gap-2 ml-4">
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={loading}
-                className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
-              >
-                <Save size={14} />
-                <span className="hidden sm:inline">Save Product</span>
-              </button>
-            </div>
+            <h1 className="text-sm sm:text-base lg:text-lg font-black tracking-tight truncate max-w-[180px] sm:max-w-md">
+              {title || "Untitled Garment"}
+            </h1>
           </div>
         </div>
-      )}
 
-      {!showPreview ? (
-        <main className="neo-container py-8 max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-8 gsap-reveal">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate("/admin")}
-                className="p-2 hover:bg-accent rounded-full transition-colors"
-              >
-                <ChevronLeft size={24} />
-              </button>
-              <div>
-                <div className="flex items-center gap-2 text-primary mb-1">
-                  <LayoutDashboard size={14} />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Admin</span>
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          {/* Mobile / Tablet Live Preview Button */}
+          <button
+            type="button"
+            onClick={() => setShowPreviewModal(true)}
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border border-border text-[11px] sm:text-xs font-bold hover:bg-muted transition-all lg:hidden"
+          >
+            <Eye size={14} />
+            <span className="hidden xs:inline">Preview</span>
+          </button>
+
+          {/* Publish Button */}
+          <button
+            type="button"
+            onClick={() => handleSubmit()}
+            disabled={loading}
+            className="flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] sm:text-xs font-bold transition-all shadow-md shadow-blue-600/20 active:scale-95 disabled:opacity-50"
+          >
+            {loading ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+            <span>{loading ? "Publishing..." : "Publish Garment"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* MAIN CONTAINER: RESPONSIVE SCREEN WIDTH */}
+      <main className="w-full px-3 sm:px-6 lg:px-8 xl:px-12 pt-4 sm:pt-6 lg:pt-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 xl:grid-cols-12 gap-5 sm:gap-6 lg:gap-8 xl:gap-10 items-start">
+          
+          {/* MAIN FORM: 7 COLS ON LAPTOPS, 8 ON DESKTOPS, FULL ON MOBILE */}
+          <div className="lg:col-span-7 xl:col-span-7 2xl:col-span-8 space-y-6 sm:space-y-8 min-w-0">
+            
+            {/* SECTION 1: GARMENT IDENTIFICATION */}
+            <div className="bg-card border border-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-7 shadow-xs space-y-5 sm:space-y-6">
+              <div className="flex items-center gap-3 pb-3 sm:pb-4 border-b border-border">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                  <Shirt size={18} className="sm:w-5 sm:h-5" />
                 </div>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                  <h1 className="text-2xl font-display font-bold">Add New Product</h1>
-                  {user?.company?.category && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-[11px] font-bold uppercase tracking-wider border border-primary/20 shadow-sm self-start sm:self-auto">
-                      <span>{getBusinessIcon(user?.company?.category)}</span>
-                      <span>{user?.company?.category}</span>
-                    </span>
-                  )}
+                <div>
+                  <h2 className="text-sm sm:text-base font-bold">1. Garment Identification</h2>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground">
+                    Title, atelier brand identity, gender silhouette, and merchandising badge
+                  </p>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Basic Info */}
-            <section id="general" className="bg-card border border-border rounded-2xl p-6 shadow-sm gsap-reveal">
-              <div className="flex items-center gap-2 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                  <Package size={18} />
-                </div>
-                <h2 className="text-sm font-bold uppercase tracking-widest">Basic Information</h2>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Product Name</label>
-                  <textarea
-                    required
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="e.g. Dell XPS 13"
-                    className="w-full bg-accent/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none h-10 min-h-[40px]"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">URL Slug</label>
-                  <input
-                    required
-                    name="slug"
-                    value={formData.slug}
-                    onChange={handleInputChange}
-                    placeholder="e.g. dell-xps-13"
-                    className="w-full bg-accent/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                  />
-                </div>
-
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Summary Description</label>
-                  <textarea
-                    required
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    placeholder="Short description for cards and search results..."
-                    className="w-full bg-accent/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none h-24"
-                  />
-                </div>
-
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Detailed Highlights (Details)</label>
-                  <textarea
-                    name="details"
-                    value={formData.details}
-                    onChange={handleInputChange}
-                    placeholder="Comprehensive details, features, and selling points..."
-                    className="w-full bg-accent/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none min-h-[160px]"
-                  />
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Category Selection</label>
-                      <div className="flex gap-2">
-                        {formData.category && (
-                          <button
-                            type="button"
-                            onClick={() => setShowDeleteCategoryConfirm(true)}
-                            className="text-destructive hover:text-destructive/80 transition-colors"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Dynamic Category Quick Select */}
-                    <div className="bg-accent/10 border border-border/50 rounded-2xl p-4">
-                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Quick Select Category</h4>
-                      {categoriesLoading ? (
-                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                          {[1, 2, 3, 4, 5, 6].map(i => (
-                            <div key={i} className="h-20 bg-muted/20 animate-pulse rounded-xl" />
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                          {categories.map((cat) => {
-                            const isSelected = formData.categorySlug === cat.slug;
-                            const catColor = getCategoryColor(cat.name);
-                            return (
-                              <button
-                                key={cat.slug}
-                                type="button"
-                                onClick={() => handleCategoryChange({ target: { value: cat.name } } as React.ChangeEvent<HTMLSelectElement>)}
-                                className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all gap-3 group relative overflow-hidden
-                                ${isSelected
-                                    ? "border-transparent text-white shadow-lg"
-                                    : "bg-background border-border/50 text-muted-foreground hover:border-primary/30"}`}
-                                style={{
-                                  backgroundColor: isSelected ? catColor : undefined,
-                                  boxShadow: isSelected ? `0 10px 20px -5px ${catColor}40` : undefined
-                                }}
-                              >
-                                <div
-                                  className={`text-3xl transition-transform duration-300 ${isSelected ? "scale-110" : "group-hover:scale-110"}`}
-                                  style={{ color: isSelected ? "white" : catColor }}
-                                >
-                                  {renderCategoryIcon(cat.icon)}
-                                </div>
-                                <span className={`text-[10px] font-bold text-center leading-tight truncate w-full ${isSelected ? "text-white" : "text-foreground/70"}`}>
-                                  {cat.name}
-                                </span>
-
-                                {/* Selection Indicator */}
-                                {isSelected && (
-                                  <motion.div
-                                    layoutId="selection-glow"
-                                    className="absolute inset-0 bg-white/10 pointer-events-none"
-                                  />
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex gap-3 items-end">
-                      <div className="flex-1 space-y-3">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-muted-foreground ml-1">New Category Name</label>
-                          <input
-                            value={newCategory}
-                            onChange={(e) => setNewCategory(e.target.value)}
-                            placeholder="Enter category name"
-                            className="w-full bg-accent/20 border border-border rounded-xl px-3 py-2 text-xs outline-none focus:border-primary/50"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-bold text-muted-foreground ml-1 flex items-center gap-2">
-                            Select Icon <span className="text-[9px] font-normal opacity-60">(Selected: {newCategoryIcon || "None"})</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={iconSearch}
-                            onChange={(e) => setIconSearch(e.target.value)}
-                            placeholder="🔍 Search icons by name..."
-                            className="w-full bg-accent/20 border border-border rounded-xl px-3 py-1.5 text-xs outline-none focus:border-primary/50"
-                          />
-                          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 bg-accent/10 p-3 rounded-xl border border-border/50 max-h-60 overflow-y-auto no-scrollbar">
-                            {presetIcons.filter(icon => icon.toLowerCase().includes(iconSearch.toLowerCase())).map(icon => {
-                              const iconColor = getCategoryColor(icon);
-                              const isSelected = newCategoryIcon === icon;
-                              return (
-                                <button
-                                  key={icon}
-                                  type="button"
-                                  onClick={() => {
-                                    setNewCategoryIcon(icon);
-                                    if (!newCategory || presetIcons.includes(newCategory)) {
-                                      setNewCategory(icon);
-                                    }
-                                  }}
-                                  className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all gap-1.5 group relative overflow-hidden
-                                  ${isSelected
-                                      ? "border-transparent text-white shadow-md"
-                                      : "bg-background border-border/50 text-muted-foreground hover:border-primary/30"}`}
-                                  style={{
-                                    backgroundColor: isSelected ? iconColor : undefined,
-                                    boxShadow: isSelected ? `0 4px 10px -2px ${iconColor}40` : undefined
-                                  }}
-                                  title={icon}
-                                >
-                                  <div
-                                    className={`transition-transform duration-300 ${isSelected ? "scale-110" : "group-hover:scale-110"}`}
-                                    style={{ color: isSelected ? "white" : iconColor }}
-                                  >
-                                    {renderCategoryIcon(icon, 18)}
-                                  </div>
-                                  <span className={`text-[8px] font-bold text-center leading-tight truncate w-full ${isSelected ? "text-white" : "text-foreground/70"}`}>
-                                    {icon}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                            <label className="flex flex-col items-center justify-center p-2 rounded-xl text-muted-foreground bg-background hover:border-primary/30 cursor-pointer border border-dashed border-border/50 transition-all gap-1.5 hover:text-primary">
-                              <Upload size={18} />
-                              <span className="text-[8px] font-bold text-center leading-tight truncate w-full">Upload</span>
-                              <input type="file" accept="image/*" className="hidden" onChange={handleCategoryIconUpload} />
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleAddCategory}
-                        className="h-10 px-6 bg-primary text-white rounded-xl font-bold text-xs hover:bg-primary/90 transition-all flex items-center gap-2 shadow-lg shadow-primary/20"
-                        disabled={loading || !newCategory || !newCategoryIcon}
-                      >
-                        <Plus size={14} /> Add Category
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-muted-foreground ml-1">Select Existing Category</label>
-                    <select
-                      required
-                      name="category"
-                      value={formData.category}
-                      onChange={handleCategoryChange}
-                      className="w-full bg-accent/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                    >
-                      <option value="">Select Category</option>
-                      {categories.map(c => (
-                        <option key={c.slug} value={c.name}>{c.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <AnimatePresence>
-                    {showDeleteCategoryConfirm && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="mt-2 p-3 bg-destructive/10 border border-destructive/20 rounded-xl overflow-hidden"
-                      >
-                        <p className="text-[10px] text-destructive font-bold mb-2">Delete category "{formData.category}" and ALL its products?</p>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={handleDeleteCategory}
-                            className="px-3 py-1 bg-destructive text-white text-[10px] font-bold rounded-lg hover:bg-destructive/90"
-                          >
-                            Confirm Delete
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setShowDeleteCategoryConfirm(false)}
-                            className="px-3 py-1 bg-accent text-foreground text-[10px] font-bold rounded-lg hover:bg-accent/80"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {formData.category && (
-                    <div className="mt-4 bg-muted/30 p-4 rounded-xl border border-border/50">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          <Settings size={14} className="text-primary" />
-                          <h3 className="text-xs font-bold uppercase tracking-wider">Category Settings: {formData.category}</h3>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Brand</label>
-                    <button
-                      type="button"
-                      onClick={() => setIsAddingNewBrand(!isAddingNewBrand)}
-                      className="text-[10px] font-bold text-primary hover:underline"
-                    >
-                      {isAddingNewBrand ? "Cancel" : "+ Add New"}
-                    </button>
-                  </div>
-
-                  {!isAddingNewBrand ? (
-                    <div className="space-y-2">
-                      <div className="flex gap-2">
-                        <select
-                          name="brand"
-                          value={formData.brand}
-                          onChange={handleInputChange}
-                          className="flex-1 bg-accent/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                        >
-                          <option value="">Select Brand</option>
-                          {Array.from(new Set(allBrands || [])).sort().map(brand => (
-                            <option key={brand} value={brand}>{brand}</option>
-                          ))}
-                        </select>
-                        <button type="button" onClick={() => setFormData(prev => ({ ...prev, brand: "" }))} className="px-3 py-2 bg-accent rounded-xl border border-border text-xs">Clear</button>
-                      </div>
-
-                      {/* Show category specific brands as quick-select badges */}
-                      {categoryArchitecture.brands.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          <span className="text-[8px] font-bold uppercase text-muted-foreground/60 w-full mb-1 ml-1">Category Brands:</span>
-                          {categoryArchitecture.brands.map(brand => (
-                            <div
-                              key={brand}
-                              onClick={() => setFormData(prev => ({ ...prev, brand }))}
-                              className={`group flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-medium cursor-pointer transition-all ${formData.brand === brand
-                                ? "bg-primary/10 border-primary text-primary"
-                                : "bg-accent/20 border-border hover:border-primary/30 text-muted-foreground"
-                                }`}
-                            >
-                              <span>{brand}</span>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setFormData(prev => ({ ...prev, brand }));
-                                  setShowDeleteBrandConfirm(true);
-                                }}
-                                className={`hover:text-destructive transition-colors ${formData.brand === brand ? "text-primary/70" : "text-muted-foreground opacity-0 group-hover:opacity-100"}`}
-                              >
-                                <X size={10} />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* All existing brands across categories */}
-                      {allBrands.length > 0 && (
-                        <div className="mt-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] font-bold uppercase text-muted-foreground ml-1">All Brands</span>
-                            <span className="text-[10px] text-muted-foreground">Click to select</span>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {allBrands.map(b => (
-                              <button
-                                key={b}
-                                type="button"
-                                onClick={() => setFormData(prev => ({ ...prev, brand: b }))}
-                                className={`px-3 py-1 rounded-full text-xs font-medium border ${formData.brand === b ? 'bg-primary/10 border-primary text-primary' : 'bg-accent/20 border-border text-muted-foreground hover:border-primary'}`}
-                              >
-                                {b}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Create & allocate brand globally */}
-                      <div className="mt-3 p-3 bg-accent/10 border border-border rounded-xl">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-[10px] font-bold uppercase text-muted-foreground">Create & Allocate Brand</span>
-                          <span className="text-[10px] text-muted-foreground">Allocate to categories</span>
-                        </div>
-                        <div className="flex gap-2 items-center mb-2">
-                          <input
-                            value={newGlobalBrand}
-                            onChange={(e) => setNewGlobalBrand(e.target.value)}
-                            placeholder="Brand name e.g. Sony"
-                            className="flex-1 bg-accent/20 border border-border rounded-xl px-3 py-2 text-xs outline-none"
-                          />
-                          <button type="button" onClick={handleCreateGlobalBrand} className="px-3 py-2 bg-primary text-white rounded-xl text-xs font-bold">Create</button>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-36 overflow-y-auto">
-                          {categories.map(c => (
-                            <label key={c.slug} className="flex items-center gap-2 text-xs">
-                              <input type="checkbox" checked={allocCategorySlugs.includes(c.slug)} onChange={() => toggleAllocCategory(c.slug)} className="w-4 h-4" />
-                              <span className="truncate">{c.name}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                      <input
-                        value={newBrandInput}
-                        onChange={(e) => setNewBrandInput(e.target.value)}
-                        placeholder="Brand Name"
-                        className="w-full bg-accent/30 border border-border rounded-xl px-3 py-2 text-xs outline-none focus:border-primary/50"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddNewBrand}
-                        className="bg-primary text-primary-foreground px-4 rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center"
-                      >
-                        <Plus size={16} />
-                      </button>
-                    </div>
-                  )}
-
-                  <AnimatePresence>
-                    {showDeleteBrandConfirm && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="p-3 bg-destructive/10 border border-destructive/20 rounded-xl mb-3"
-                      >
-                        <p className="text-[10px] text-destructive font-bold mb-2">Delete brand "{formData.brand}" from {formData.category}?</p>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={handleDeleteBrandFromCategory}
-                            className="px-3 py-1 bg-destructive text-white text-[10px] font-bold rounded-lg hover:bg-destructive/90"
-                          >
-                            Confirm Delete
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setShowDeleteBrandConfirm(false)}
-                            className="px-3 py-1 bg-accent border border-border text-[10px] font-bold rounded-lg hover:bg-accent/80"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Subcategory / Type</label>
-                    <button
-                      type="button"
-                      onClick={() => setIsAddingNewType(!isAddingNewType)}
-                      className="text-[10px] font-bold text-primary hover:underline"
-                    >
-                      {isAddingNewType ? "Cancel" : "+ Add New"}
-                    </button>
-                  </div>
-
-                  {/* Type Selection / Badges */}
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {categoryArchitecture.subcategories.map(type => (
-                      <div
-                        key={type.slug}
-                        onClick={() => setFormData(prev => ({ ...prev, type: type.name }))}
-                        className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium cursor-pointer transition-all ${formData.type === type.name
-                          ? "bg-primary border-primary text-primary-foreground shadow-sm shadow-primary/20"
-                          : "bg-accent/30 border-border hover:border-primary/50 text-foreground"
-                          }`}
-                      >
-                        <span>{type.name}</span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setFormData(prev => ({ ...prev, type: type.name }));
-                            setShowDeleteTypeConfirm(true);
-                          }}
-                          className={`hover:text-destructive transition-colors ${formData.type === type.name ? "text-primary-foreground/70" : "text-muted-foreground opacity-0 group-hover:opacity-100"}`}
-                        >
-                          <X size={12} />
-                        </button>
-                      </div>
-                    ))}
-                    {categoryArchitecture.subcategories.length === 0 && !isAddingNewType && (
-                      <p className="text-[10px] text-muted-foreground italic ml-1">No types added yet.</p>
-                    )}
-                  </div>
-
-                  <AnimatePresence>
-                    {showDeleteTypeConfirm && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="p-3 bg-destructive/10 border border-destructive/20 rounded-xl mb-3"
-                      >
-                        <p className="text-[10px] text-destructive font-bold mb-2">Delete type "{formData.type}" from {formData.category}?</p>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={handleDeleteType}
-                            className="px-3 py-1 bg-destructive text-white text-[10px] font-bold rounded-lg hover:bg-destructive/90"
-                          >
-                            Confirm Delete
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setShowDeleteTypeConfirm(false)}
-                            className="px-3 py-1 bg-accent border border-border text-[10px] font-bold rounded-lg hover:bg-accent/80"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {isAddingNewType && (
-                    <div className="space-y-2 p-3 bg-accent/20 rounded-xl border border-border/50 animate-in fade-in slide-in-from-top-2 duration-300">
-                      <div className="flex gap-2">
-                        <div className="flex-1 space-y-1">
-                          <label className="text-[8px] font-bold uppercase text-muted-foreground ml-1">Name</label>
-                          <input
-                            value={newTypeInput}
-                            onChange={(e) => {
-                              setNewTypeInput(e.target.value);
-                              setNewTypeSlugInput(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-"));
-                            }}
-                            placeholder="e.g. Gaming Laptops"
-                            className="w-full bg-accent/30 border border-border rounded-xl px-3 py-2 text-xs outline-none focus:border-primary/50"
-                          />
-                        </div>
-                        <div className="flex-1 space-y-1">
-                          <label className="text-[8px] font-bold uppercase text-muted-foreground ml-1">Slug</label>
-                          <input
-                            value={newTypeSlugInput}
-                            onChange={(e) => setNewTypeSlugInput(e.target.value)}
-                            placeholder="e.g. gaming-laptops"
-                            className="w-full bg-accent/30 border border-border rounded-xl px-3 py-2 text-xs outline-none focus:border-primary/50"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setIsAddingNewType(false)}
-                          className="px-3 py-1.5 text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleAddNewType}
-                          className="px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-[10px] font-bold hover:bg-primary/90 transition-all flex items-center gap-1.5"
-                        >
-                          <Plus size={12} /> Add Type
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Short Description</label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    placeholder="Brief overview of the product..."
-                    rows={3}
-                    className="w-full bg-accent/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none"
-                  />
-                </div>
-              </div>
-            </section>
-
-            {/* Pricing & Inventory */}
-            <section id="pricing" className="bg-card border border-border rounded-2xl p-6 shadow-sm gsap-reveal">
-              <div className="flex items-center gap-2 mb-6">
-                <Package size={18} className="text-primary" />
-                <h2 className="text-sm font-bold uppercase tracking-widest">Pricing & Inventory</h2>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Price (PKR)</label>
-                  <input
-                    required
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    placeholder="0.00"
-                    className="w-full bg-accent/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Original Price</label>
-                  <input
-                    type="number"
-                    name="originalPrice"
-                    value={formData.originalPrice}
-                    onChange={handleInputChange}
-                    placeholder="Optional"
-                    className="w-full bg-accent/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Discount (%)</label>
-                  <input
-                    type="number"
-                    name="discount"
-                    value={formData.discount}
-                    onChange={handleInputChange}
-                    placeholder="Optional"
-                    className="w-full bg-accent/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Stock Count</label>
-                  <input
-                    type="number"
-                    name="stockCount"
-                    value={formData.stockCount}
-                    onChange={handleInputChange}
-                    placeholder="0"
-                    className="w-full bg-accent/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Rating (0-5)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="5"
-                    name="rating"
-                    value={formData.rating}
-                    onChange={handleInputChange}
-                    placeholder="4.5"
-                    className="w-full bg-accent/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Reviews Count</label>
-                  <input
-                    type="number"
-                    name="reviews"
-                    value={formData.reviews}
-                    onChange={handleInputChange}
-                    placeholder="0"
-                    className="w-full bg-accent/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                  />
-                </div>
-
-                <div className="flex flex-wrap items-center gap-6 pt-6">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="inStock"
-                      checked={formData.inStock}
-                      onChange={handleInputChange}
-                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary accent-primary"
-                    />
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">In Stock</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="isNew"
-                      checked={formData.isNew}
-                      onChange={handleInputChange}
-                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary accent-primary"
-                    />
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                      <Star size={12} className="text-yellow-500" />
-                      New Arrival
-                    </span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="isBestSeller"
-                      checked={formData.isBestSeller}
-                      onChange={handleInputChange}
-                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary accent-primary"
-                    />
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                      <CheckCircle2 size={12} className="text-blue-500" />
-                      Best Seller
-                    </span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="isPopular"
-                      checked={formData.isPopular}
-                      onChange={handleInputChange}
-                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary accent-primary"
-                    />
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                      <TrendingUp size={12} className="text-orange-500" />
-                      Popular
-                    </span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="isOffer"
-                      checked={formData.isOffer}
-                      onChange={handleInputChange}
-                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary accent-primary"
-                    />
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                      <Tag size={12} className="text-emerald-500" />
-                      Offer
-                    </span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="freeShipping"
-                      checked={formData.freeShipping}
-                      onChange={handleInputChange}
-                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary accent-primary"
-                    />
-                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                      <Truck size={12} className="text-primary" />
-                      Free Shipping
-                    </span>
-                  </label>
-                </div>
-              </div>
-            </section>
-
-            {/* Features */}
-            <section id="features" className="bg-card border border-border rounded-2xl p-6 shadow-sm gsap-reveal">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <Star size={18} className="text-primary" />
-                  <h2 className="text-sm font-bold uppercase tracking-widest">Product Features</h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, features: [...prev.features, ""] }))}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-xl text-xs font-bold hover:bg-primary/20 transition-colors"
-                >
-                  <Plus size={14} /> Add Feature
-                </button>
               </div>
 
               <div className="space-y-4">
-                {formData.features.map((feature, index) => (
-                  <div key={index} className="flex gap-4 animate-in slide-in-from-left-2 duration-300">
-                    <div className="flex-1">
-                      <input
-                        value={feature}
-                        onChange={(e) => {
-                          const newFeatures = [...formData.features];
-                          newFeatures[index] = e.target.value;
-                          setFormData(prev => ({ ...prev, features: newFeatures }));
-                        }}
-                        placeholder="e.g. Noise Cancellation, 12-hour Battery Life"
-                        className="w-full bg-accent/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setFormData(prev => ({
-                        ...prev,
-                        features: prev.features.filter((_, i) => i !== index)
-                      }))}
-                      className="p-2.5 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                ))}
-                {formData.features.length === 0 && (
-                  <div className="text-center py-8 border-2 border-dashed border-border rounded-2xl">
-                    <p className="text-sm text-muted-foreground">No features added yet. Click "Add Feature" to start.</p>
-                  </div>
-                )}
-              </div>
-            </section>
-
-            {/* Product Collections */}
-            <section id="collections" className="bg-card border border-border rounded-2xl p-6 shadow-sm gsap-reveal">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <Plus size={18} className="text-primary" />
-                  <h2 className="text-sm font-bold uppercase tracking-widest">Product Collections</h2>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                    Garment Name / Style Title <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={title}
+                    onChange={(e) => handleTitleChange(e.target.value)}
+                    placeholder="e.g. Atelier Raw Selvedge Straight Jean"
+                    className="w-full bg-muted/40 border border-border rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                  />
                 </div>
-              </div>
 
-              <div className="space-y-6">
-                <div className="flex gap-3 items-end">
-                  <div className="flex-1 space-y-1.5">
-                    <label className="text-[10px] font-bold text-muted-foreground ml-1">Add New Collection</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                      URL Slug / Handle
+                    </label>
                     <input
-                      value={newCollectionInput}
-                      onChange={(e) => setNewCollectionInput(e.target.value)}
-                      placeholder="e.g. Summer Sale, Back to School"
-                      className="w-full bg-accent/20 border border-border rounded-xl px-4 py-2 text-xs outline-none focus:border-primary/50"
+                      type="text"
+                      value={handle}
+                      onChange={(e) => setHandle(e.target.value)}
+                      placeholder="atelier-raw-selvedge-jean"
+                      className="w-full bg-muted/40 border border-border rounded-xl px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-mono focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
                     />
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleAddCollection}
-                    disabled={!newCollectionInput.trim()}
-                    className="h-9 px-4 bg-primary/10 text-primary rounded-xl font-bold text-[10px] uppercase tracking-wider hover:bg-primary/20 transition-all flex items-center gap-2 disabled:opacity-50"
-                  >
-                    <Plus size={14} /> Add
-                  </button>
-                </div>
 
-                <div className="flex flex-wrap gap-3">
-                  {collectionsLoading ? (
-                    <div className="flex gap-2">
-                      {[1, 2, 3].map(i => <div key={i} className="w-24 h-8 bg-muted animate-pulse rounded-xl" />)}
-                    </div>
-                  ) : (
-                    availableCollections.map((coll: Collection) => {
-                      const isSelected = formData.collections.includes(coll.name);
-                      return (
-                        <div key={coll.id} className="relative group/coll">
-                          <button
-                            type="button"
-                            onClick={() => handleCollectionToggle(coll.name)}
-                            className={`px-4 py-2 rounded-xl border text-xs font-bold uppercase tracking-widest transition-all ${isSelected
-                              ? "border-primary bg-primary/5 text-primary ring-1 ring-primary"
-                              : "border-border bg-accent/30 text-muted-foreground hover:bg-accent/50"
-                              }`}
-                          >
-                            {coll.name}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteCollection(coll.id, coll.name);
-                            }}
-                            className="absolute -top-2 -right-2 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover/coll:opacity-100 transition-opacity shadow-lg"
-                          >
-                            <X size={10} />
-                          </button>
-                        </div>
-                      );
-                    })
-                  )}
-                  {!collectionsLoading && availableCollections.length === 0 && (
-                    <p className="text-xs text-muted-foreground italic">No custom collections created yet.</p>
-                  )}
-                </div>
-              </div>
-            </section>
-
-            {/* Media & Appearance */}
-            <section id="media" className="bg-card border border-border rounded-2xl p-6 shadow-sm gsap-reveal">
-              <div className="flex items-center gap-2 mb-6">
-                <ImageIcon size={18} className="text-primary" />
-                <h2 className="text-sm font-bold uppercase tracking-widest">Media & Appearance.  aaa aaa</h2>
-              </div>
-
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Main Image</label>
-                    <div className="flex flex-col gap-4">
-                      <div className="flex gap-2">
-                        <input
-                          name="image"
-                          value={formData.image}
-                          onChange={handleInputChange}
-                          placeholder="URL or Upload ->"
-                          className="flex-1 bg-accent/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                        />
-                        <label className="cursor-pointer bg-primary/10 text-primary p-2.5 rounded-xl hover:bg-primary/20 transition-colors">
-                          <Upload size={18} />
-                          <input type="file" accept="image/*" className="hidden" onChange={handleMainImageUpload} />
-                        </label>
-                      </div>
-                      {formData.image && (
-                        <div className="relative w-24 h-24 rounded-xl overflow-hidden border border-border">
-                          <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
-                          <button
-                            type="button"
-                            onClick={() => { setFormData(prev => ({ ...prev, image: "" })); setMainImageFile(null); }}
-                            className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
-                          >
-                            <X size={12} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">3D Model (.glb/.gltf)</label>
-                    <div className="flex gap-2">
-                      <input
-                        name="model3D"
-                        value={formData.model3D}
-                        onChange={handleInputChange}
-                        placeholder="URL or Upload ->"
-                        className="flex-1 bg-accent/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                      />
-                      <label className="cursor-pointer bg-primary/10 text-primary p-2.5 rounded-xl hover:bg-primary/20 transition-colors">
-                        <Box size={18} />
-                        <input type="file" accept=".glb,.gltf" className="hidden" onChange={handle3DModelUpload} />
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        Atelier Brand
                       </label>
-                    </div>
-                    {model3DFile && <p className="text-[10px] text-emerald-500 font-medium">Selected: {model3DFile.name}</p>}
-                  </div>
-                </div>
-
-                {/* Video to 3D Spin Frames Converter */}
-                <div className="space-y-4 pt-4 border-t border-border/50">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-accent/20 p-4 rounded-2xl border border-border">
-                    <div>
-                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
-                        3D Video Spin Converter (.mp4 / .webm / .mov)
-                      </label>
-                      <span className="text-[11px] text-muted-foreground">
-                        Upload a video of the product to convert it into 30 frame images for interactive 360° spin in storefront.
-                      </span>
-                    </div>
-                    <label className={`cursor-pointer px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all shadow-sm ${videoUploading ? 'bg-primary/50 text-white cursor-not-allowed' : 'bg-primary text-white hover:bg-primary/90'
-                      }`}>
-                      {videoUploading ? <Loader2 size={16} className="animate-spin" /> : <Video size={16} />}
-                      <span>{videoUploading ? "Converting Video..." : "Upload Video to Frames"}</span>
-                      <input
-                        type="file"
-                        accept="video/*"
-                        className="hidden"
-                        disabled={videoUploading}
-                        onChange={handleVideoToFramesUpload}
-                      />
-                    </label>
-                  </div>
-
-                  {videoUploading && (
-                    <div className="flex items-center gap-3 p-4 bg-primary/10 rounded-xl border border-primary/30 text-xs text-primary font-medium animate-pulse">
-                      <Loader2 size={18} className="animate-spin flex-shrink-0" />
-                      <span>Processing video file... Extracting 30 frame images using OpenCV backend service. Please wait...</span>
-                    </div>
-                  )}
-
-                  {formData.model3DFrames && formData.model3DFrames.length > 0 && (
-                    <div className="space-y-4 bg-black/5 dark:bg-white/5 p-4 rounded-2xl border border-border">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-widest text-emerald-500 flex items-center gap-1.5">
-                          <CheckCircle2 size={15} /> {formData.model3DFrames.length} Frames Extracted & Connected
-                        </span>
+                      <div className="flex items-center gap-1.5">
                         <button
                           type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, model3DFrames: [] }))}
-                          className="text-xs text-destructive hover:underline font-semibold"
+                          onClick={() => setIsAddingNewBrand(!isAddingNewBrand)}
+                          className="text-[10px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-blue-500/10 transition-colors cursor-pointer"
+                          title="Add New Brand"
                         >
-                          Clear Converted Frames
+                          <Plus size={11} />
+                          <span>Add Brand</span>
                         </button>
-                      </div>
-
-                      {/* Interactive 3D Frame Rotation Scrubber Preview */}
-                      <div className="relative aspect-[16/9] w-full max-w-md mx-auto bg-black/80 rounded-xl overflow-hidden flex flex-col items-center justify-center border border-white/10 group shadow-inner">
-                        <img
-                          src={formData.model3DFrames[videoFramePreviewIndex]}
-                          alt={`Converted Frame ${videoFramePreviewIndex + 1}`}
-                          className="w-full h-full object-contain"
-                        />
-                        <div className="absolute bottom-2 left-2 bg-black/75 text-white text-[10px] font-mono px-2 py-0.5 rounded">
-                          Frame {videoFramePreviewIndex + 1} / {formData.model3DFrames.length}
-                        </div>
-                        <div className="absolute top-2 right-2 bg-emerald-500 text-white text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded shadow">
-                          360° Interactive Preview
-                        </div>
-                      </div>
-
-                      {/* Frame Slider Scrubber */}
-                      <div className="space-y-1 max-w-md mx-auto">
-                        <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
-                          <span>Drag slider frame-by-frame:</span>
-                          <span>Frame {videoFramePreviewIndex + 1}</span>
-                        </div>
-                        <input
-                          type="range"
-                          min={0}
-                          max={formData.model3DFrames.length - 1}
-                          value={videoFramePreviewIndex}
-                          onChange={(e) => setVideoFramePreviewIndex(Number(e.target.value))}
-                          className="w-full accent-primary cursor-pointer"
-                        />
-                      </div>
-
-                      {/* Filmstrip preview of extracted frames */}
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">All Extracted Frames ({formData.model3DFrames.length})</span>
-                        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                          {formData.model3DFrames.map((frameUrl, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => setVideoFramePreviewIndex(idx)}
-                              className={`relative flex-shrink-0 w-16 h-12 rounded-lg border overflow-hidden transition-all ${videoFramePreviewIndex === idx ? 'border-primary ring-2 ring-primary scale-105' : 'border-border opacity-60 hover:opacity-100'
-                                }`}
-                            >
-                              <img src={frameUrl} alt={`Frame ${idx + 1}`} className="w-full h-full object-cover" />
-                              <span className="absolute bottom-0.5 right-0.5 bg-black/80 text-white text-[8px] px-1 rounded font-mono">
-                                {idx + 1}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
+                        {brand && (
+                          <button
+                            type="button"
+                            onClick={handleDeleteBrand}
+                            className="text-[10px] font-bold text-rose-500 hover:text-rose-600 flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-rose-500/10 transition-colors cursor-pointer"
+                            title="Delete Selected Brand"
+                          >
+                            <Trash2 size={11} />
+                            <span>Delete</span>
+                          </button>
+                        )}
                       </div>
                     </div>
-                  )}
-                </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Available Colors</label>
-                  <div className="flex flex-wrap gap-3">
-                    {COLORS.map(color => {
-                      const isSelected = formData.colors.some(c => c.name === color.name);
-                      return (
-                        <button
-                          key={color.name}
-                          type="button"
-                          onClick={() => handleColorToggle(color)}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${isSelected ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-accent/30 hover:bg-accent/50"
-                            }`}
-                        >
-                          <div
-                            className="w-4 h-4 rounded-full border border-border"
-                            style={{ backgroundColor: color.hex }}
+                    {isAddingNewBrand && (
+                      <div className="p-2.5 mb-2 bg-muted/60 border border-blue-500/30 rounded-xl space-y-2">
+                        <span className="text-[11px] font-bold text-foreground">Create New Brand Identity</span>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={newBrandInput}
+                            onChange={(e) => setNewBrandInput(e.target.value)}
+                            placeholder="Brand name (e.g. Atelier Craft Co., Heritage Studio)"
+                            className="flex-1 bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none focus:ring-1 focus:ring-blue-500"
                           />
-                          <span className="text-xs font-medium">{color.name}</span>
-                          {isSelected && <Check size={12} className="text-primary" />}
-                        </button>
-                      );
-                    })}
+                          <button
+                            type="button"
+                            onClick={handleCreateBrand}
+                            disabled={isSavingBrand || !newBrandInput.trim()}
+                            className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
+                          >
+                            {isSavingBrand ? "Saving..." : "Save"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAddingNewBrand(false);
+                              setNewBrandInput("");
+                            }}
+                            className="px-2 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <select
+                      data-testid="brand-select"
+                      value={brand}
+                      onChange={(e) => setBrand(e.target.value)}
+                      className="w-full bg-muted/40 border border-border rounded-xl px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 outline-none"
+                    >
+                      {allBrandOptions.map((b: any) => (
+                        <option key={b.slug || b.name} value={b.name}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Gallery Images</label>
-                    <div className="flex gap-4">
-                      <label className="cursor-pointer text-[10px] font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1">
-                        <Upload size={12} /> Add Image
-                        <input type="file" accept="image/*" className="hidden" onChange={handleSingleImageUpload} />
-                      </label>
-                      <label className="cursor-pointer text-[10px] font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1">
-                        <Upload size={12} /> Bulk Upload
-                        <input type="file" multiple accept="image/*" className="hidden" onChange={handleBulkImageUpload} />
-                      </label>
-                      <label className="cursor-pointer text-[10px] font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1">
-                        <Upload size={12} /> Folder Upload
-                        <input
-                          type="file"
-                          multiple
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleBulkImageUpload}
-                          // @ts-expect-error: webkitdirectory and directory are not standard HTML attributes but are needed for folder upload
-                          webkitdirectory="true"
-                          directory="true"
-                        />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-1 sm:pt-2">
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        Merchandising Badge
                       </label>
                       <button
                         type="button"
-                        onClick={() => addArrayItem("images")}
-                        className="text-[10px] font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
+                        onClick={() => setShowAddBadgeInput(!showAddBadgeInput)}
+                        className="text-[10px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-blue-500/10 transition-colors cursor-pointer"
+                        title="Add Custom Badge"
                       >
-                        <Plus size={12} /> Add URL
+                        <Plus size={11} />
+                        <span>Add Badge</span>
                       </button>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {formData.images.map((img, i) => (
-                      <div key={i} className="relative group aspect-square rounded-xl overflow-hidden border border-border bg-accent/20">
-                        {img ? (
-                          <img src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                            <ImageIcon size={24} />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+
+                    {showAddBadgeInput && (
+                      <div className="p-2.5 mb-2 bg-muted/60 border border-blue-500/30 rounded-xl space-y-2">
+                        <span className="text-[11px] font-bold text-foreground">Create Custom Merchandising Badge</span>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={newBadgeTitle}
+                            onChange={(e) => setNewBadgeTitle(e.target.value)}
+                            placeholder="e.g. PRE-ORDER, ARCHIVE, CORE ESSENTIAL"
+                            className="flex-1 bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none uppercase"
+                          />
                           <button
                             type="button"
-                            onClick={() => removeArrayItem(i, "images")}
-                            className="p-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors"
+                            onClick={handleCreateBadge}
+                            disabled={!newBadgeTitle.trim()}
+                            className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
                           >
-                            <Trash2 size={16} />
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowAddBadgeInput(false);
+                              setNewBadgeTitle("");
+                            }}
+                            className="px-2 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground cursor-pointer"
+                          >
+                            Cancel
                           </button>
                         </div>
                       </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {badges.map((b) => {
+                        const isSelected = badge === b;
+                        return (
+                          <div
+                            key={b}
+                            onClick={() => setBadge(isSelected ? "" : b)}
+                            className={`group/badge relative flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-wider transition-all cursor-pointer border ${
+                              isSelected
+                                ? "bg-foreground text-background border-foreground shadow-xs font-black pr-6"
+                                : "bg-muted text-muted-foreground hover:bg-muted/80 border-transparent pr-6"
+                            }`}
+                          >
+                            <span>{b}</span>
+                            <span
+                              onClick={(e) => handleDeleteBadge(b, e)}
+                              title={`Delete badge ${b}`}
+                              className={`absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded transition-colors cursor-pointer ${
+                                isSelected ? "hover:bg-background/20 text-background/80 hover:text-background" : "hover:bg-rose-500/20 text-muted-foreground hover:text-rose-500"
+                              }`}
+                            >
+                              <X size={10} />
+                            </span>
+                          </div>
+                        );
+                      })}
+                      {badge && (
+                        <button
+                          type="button"
+                          onClick={() => setBadge("")}
+                          className="px-2 py-1 text-[9px] font-bold text-muted-foreground hover:text-rose-500 underline"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        Gender / Silhouette
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddGenderInput(!showAddGenderInput)}
+                        className="text-[10px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-blue-500/10 transition-colors cursor-pointer"
+                        title="Add Silhouette"
+                      >
+                        <Plus size={11} />
+                        <span>Add Silhouette</span>
+                      </button>
+                    </div>
+
+                    {showAddGenderInput && (
+                      <div className="p-2.5 mb-2 bg-muted/60 border border-blue-500/30 rounded-xl space-y-2">
+                        <span className="text-[11px] font-bold text-foreground">Add Custom Gender / Silhouette</span>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={newGenderTitle}
+                            onChange={(e) => setNewGenderTitle(e.target.value)}
+                            placeholder="e.g. Kids, Oversized Fit, Petite, Tall, Gender-Neutral"
+                            className="flex-1 bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleCreateGender}
+                            disabled={!newGenderTitle.trim()}
+                            className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
+                          >
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowAddGenderInput(false);
+                              setNewGenderTitle("");
+                            }}
+                            className="px-2 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                      {genderOptions.map((g) => {
+                        const isSelected = gender === g;
+                        return (
+                          <div
+                            key={g}
+                            onClick={() => setGender(g)}
+                            className={`group/gender relative flex items-center justify-between py-1.5 sm:py-2 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                              isSelected
+                                ? "bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-600/20 pr-7"
+                                : "bg-muted/30 border-border text-muted-foreground hover:bg-muted pr-7"
+                            }`}
+                          >
+                            <span>{g}</span>
+                            <span
+                              onClick={(e) => handleDeleteGender(g, e)}
+                              title={`Delete silhouette ${g}`}
+                              className={`absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded transition-colors cursor-pointer ${
+                                isSelected ? "hover:bg-blue-700 text-white/80 hover:text-white" : "hover:bg-rose-500/20 text-muted-foreground hover:text-rose-500"
+                              }`}
+                            >
+                              <X size={11} />
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-4 sm:gap-6 pt-3 border-t border-border/60">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isActive}
+                      onChange={(e) => setIsActive(e.target.checked)}
+                      className="w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-500/20"
+                    />
+                    <span className="text-xs font-bold">Catalog Live (Active for customer purchases)</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isFeatured}
+                      onChange={(e) => setIsFeatured(e.target.checked)}
+                      className="w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-500/20"
+                    />
+                    <span className="text-xs font-bold">Feature on Homepage Spotlight</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 2: APPAREL CATEGORY, COLLECTIONS & FEATURE BLUEPRINT */}
+            <div className="bg-card border border-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-7 shadow-xs space-y-5 sm:space-y-6">
+              <div className="flex items-center gap-3 pb-3 sm:pb-4 border-b border-border">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0">
+                  <Layers size={18} className="sm:w-5 sm:h-5" />
+                </div>
+                <div>
+                  <h2 className="text-sm sm:text-base font-bold">2. Apparel Category, Collections & Features</h2>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground">
+                    Taxonomy hierarchy and category-specific blueprint specification chips
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      Primary Apparel Category <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddCategoryInput(!showAddCategoryInput)}
+                        className="text-[10px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-blue-500/10 transition-colors cursor-pointer"
+                        title="Add New Category"
+                      >
+                        <Plus size={11} />
+                        <span>Add Category</span>
+                      </button>
+                      {selectedCategory && (
+                        <button
+                          type="button"
+                          onClick={handleDeleteCategory}
+                          className="text-[10px] font-bold text-rose-500 hover:text-rose-600 flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          title="Delete Selected Category"
+                        >
+                          <Trash2 size={11} />
+                          <span>Delete</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {showAddCategoryInput && (
+                    <div className="p-2.5 mb-2 bg-muted/60 border border-blue-500/30 rounded-xl space-y-2">
+                      <span className="text-[11px] font-bold text-foreground">Create New Category</span>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Category name (e.g. Knitwear, Suits)"
+                          value={newCategoryTitle}
+                          onChange={(e) => setNewCategoryTitle(e.target.value)}
+                          className="flex-1 bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleCreateCategory}
+                          disabled={isSavingCategory || !newCategoryTitle.trim()}
+                          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
+                        >
+                          {isSavingCategory ? "Saving..." : "Save"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setShowAddCategoryInput(false); setNewCategoryTitle(""); }}
+                          className="px-2 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => {
+                      setSelectedCategory(e.target.value);
+                      setSelectedSubCategory("");
+                    }}
+                    className="w-full bg-muted/40 border border-border rounded-xl px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-bold focus:ring-2 focus:ring-blue-500/20 outline-none"
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat.handle || cat.slug || cat.id} value={cat.handle || cat.slug || String(cat.id)}>
+                        {cat.title || cat.name}
+                      </option>
                     ))}
-                    {formData.images.length === 0 && (
-                      <div className="col-span-full py-8 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center text-muted-foreground">
-                        <ImageIcon size={32} className="mb-2 opacity-20" />
-                        <p className="text-xs">No gallery images added</p>
+                  </select>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      SubCategory Cut / Style
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddSubCategoryInput(!showAddSubCategoryInput)}
+                        className="text-[10px] font-bold text-purple-600 hover:text-purple-700 flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-purple-500/10 transition-colors cursor-pointer"
+                        title={`Add SubCategory to ${currentCategoryObj?.title || selectedCategory}`}
+                      >
+                        <Plus size={11} />
+                        <span>Add SubCategory</span>
+                      </button>
+                      {selectedSubCategory && (
+                        <button
+                          type="button"
+                          onClick={handleDeleteSubCategory}
+                          className="text-[10px] font-bold text-rose-500 hover:text-rose-600 flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          title="Delete Selected SubCategory"
+                        >
+                          <Trash2 size={11} />
+                          <span>Delete</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {showAddSubCategoryInput && (
+                    <div className="p-2.5 mb-2 bg-muted/60 border border-purple-500/30 rounded-xl space-y-2">
+                      <span className="text-[11px] font-bold text-foreground">
+                        Add SubCategory to {currentCategoryObj?.title || selectedCategory}
+                      </span>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="SubCategory name (e.g. Bootcut, Oversized)"
+                          value={newSubCategoryTitle}
+                          onChange={(e) => setNewSubCategoryTitle(e.target.value)}
+                          className="flex-1 bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none focus:ring-1 focus:ring-purple-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleCreateSubCategory}
+                          disabled={isSavingSubCategory || !newSubCategoryTitle.trim()}
+                          className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-bold hover:bg-purple-700 disabled:opacity-50 cursor-pointer"
+                        >
+                          {isSavingSubCategory ? "Saving..." : "Save"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setShowAddSubCategoryInput(false); setNewSubCategoryTitle(""); }}
+                          className="px-2 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <select
+                    value={selectedSubCategory}
+                    onChange={(e) => setSelectedSubCategory(e.target.value)}
+                    disabled={availableSubcategories.length === 0}
+                    className="w-full bg-muted/40 border border-border rounded-xl px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-medium focus:ring-2 focus:ring-blue-500/20 outline-none disabled:opacity-50"
+                  >
+                    <option value="">Select subcategory...</option>
+                    {availableSubcategories.map((sub: any) => (
+                      <option key={sub.handle || sub.slug || sub.id} value={sub.handle || sub.slug || String(sub.id)}>
+                        {sub.title || sub.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Collections Multi-Select */}
+              <div>
+                <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Curated Collections Drops
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddCollectionInput(!showAddCollectionInput)}
+                    className="text-[10px] font-bold text-purple-600 hover:text-purple-700 flex items-center gap-1 px-2 py-0.5 rounded-md hover:bg-purple-500/10 transition-colors cursor-pointer"
+                    title="Add New Collection"
+                  >
+                    <Plus size={11} />
+                    <span>Add Collection</span>
+                  </button>
+                </div>
+
+                {showAddCollectionInput && (
+                  <div className="p-2.5 mb-3 bg-muted/60 border border-purple-500/30 rounded-xl space-y-2">
+                    <span className="text-[11px] font-bold text-foreground">Create New Collection Drop</span>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Collection name (e.g. Summer Capsule '26, Vintage Edition)"
+                        value={newCollectionTitle}
+                        onChange={(e) => setNewCollectionTitle(e.target.value)}
+                        className="flex-1 bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none focus:ring-1 focus:ring-purple-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCreateCollection}
+                        disabled={isSavingCollection || !newCollectionTitle.trim()}
+                        className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-bold hover:bg-purple-700 disabled:opacity-50 cursor-pointer"
+                      >
+                        {isSavingCollection ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowAddCollectionInput(false); setNewCollectionTitle(""); }}
+                        className="px-2 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  {dbCollections.map((col) => {
+                    const colKey = col.handle || col.slug || String(col.id);
+                    const isSelected = selectedCollections.includes(colKey);
+                    return (
+                      <button
+                        key={col.handle || col.id}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedCollections(selectedCollections.filter((c) => c !== colKey));
+                          } else {
+                            setSelectedCollections([...selectedCollections, colKey]);
+                          }
+                        }}
+                        className={`group/chip relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all border cursor-pointer ${
+                          isSelected
+                            ? "bg-purple-600 text-white border-purple-600 shadow-xs pr-7"
+                            : "bg-muted/40 border-border text-muted-foreground hover:bg-muted pr-7"
+                        }`}
+                      >
+                        {isSelected && <Check size={12} />}
+                        <span>{col.title || col.name}</span>
+                        <span
+                          onClick={(e) => handleDeleteCollection(col, e)}
+                          title={`Delete collection ${col.title || col.name}`}
+                          className={`absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded-md transition-colors cursor-pointer ${
+                            isSelected ? "hover:bg-purple-700 text-white/80 hover:text-white" : "hover:bg-rose-500/20 text-muted-foreground hover:text-rose-500"
+                          }`}
+                        >
+                          <X size={12} />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Specification Blueprints */}
+              <div className="pt-2 border-t border-border/60 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Category Features Blueprint (Click to Add)
+                  </label>
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    Tailored for {currentCategoryObj?.title || selectedCategory}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  {suggestedBlueprintFeatures.map((feat) => {
+                    const isAdded = details.includes(feat);
+                    return (
+                      <button
+                        key={feat}
+                        type="button"
+                        onClick={() => addBlueprintFeature(feat)}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-semibold transition-all border ${
+                          isAdded
+                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600"
+                            : "bg-muted/30 border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+                        }`}
+                      >
+                        {isAdded ? <Check size={11} className="text-emerald-500" /> : <Plus size={11} />}
+                        <span>{feat}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Active Features List */}
+                <div className="space-y-2 pt-2">
+                  <span className="text-[11px] font-bold text-foreground">
+                    Active Garment Craftsmanship Specs ({details.length})
+                  </span>
+                  <div className="space-y-1.5">
+                    {details.map((d, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between bg-muted/30 border border-border rounded-xl px-3 py-1.5 text-xs"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Check size={13} className="text-emerald-500 shrink-0" />
+                          <span className="font-medium">{d}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeDetailBullet(idx)}
+                          className="text-muted-foreground hover:text-rose-500 p-1 transition-colors"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2 pt-1">
+                    <input
+                      type="text"
+                      value={newDetailInput}
+                      onChange={(e) => setNewDetailInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addCustomDetailBullet();
+                        }
+                      }}
+                      placeholder="Add custom feature (e.g. 100% GOTS Organic Cotton, Made in Japan)..."
+                      className="flex-1 bg-muted/40 border border-border rounded-xl px-3 py-2 text-xs outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={addCustomDetailBullet}
+                      className="px-3 sm:px-3.5 py-2 rounded-xl bg-accent text-xs font-bold border border-border hover:bg-accent/80 shrink-0"
+                    >
+                      + Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Denim / Bottoms Tailoring Specs */}
+              {isDenimOrBottoms && (
+                <div className="pt-2 border-t border-border/60 space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        Denim Tailoring Specifications ({denimSpecs.length})
+                      </label>
+                      <span className="text-[10px] text-muted-foreground">
+                        Configure fit silhouette, waist rise, wash finish, and custom tailoring specs (add & delete)
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddDenimSpecInput(!showAddDenimSpecInput)}
+                      className="text-[10px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 transition-colors cursor-pointer"
+                    >
+                      <Plus size={12} />
+                      <span>+ Add Tailoring Spec</span>
+                    </button>
+                  </div>
+
+                  {showAddDenimSpecInput && (
+                    <div className="p-3 bg-muted/60 border border-blue-500/30 rounded-xl space-y-2">
+                      <span className="text-[11px] font-bold text-foreground">Add Custom Denim Specification</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          placeholder="Spec Name (e.g. Inseam, Leg Opening, Stretch)"
+                          value={newDenimSpecLabel}
+                          onChange={(e) => setNewDenimSpecLabel(e.target.value)}
+                          className="bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Spec Value (e.g. 32 Inch, 16.5 Inch, 2% Stretch)"
+                          value={newDenimSpecValue}
+                          onChange={(e) => setNewDenimSpecValue(e.target.value)}
+                          className="bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
+                        <div className="flex gap-1.5 flex-wrap items-center">
+                          <span className="text-[10px] text-muted-foreground font-semibold">Quick Add:</span>
+                          {[
+                            { label: "Inseam Length", value: "32 Inch" },
+                            { label: "Leg Opening", value: "16.5 Inch" },
+                            { label: "Selvedge ID", value: "Red Line ID" },
+                            { label: "Hardware", value: "Antiqued Copper" },
+                            { label: "Fabric Weight", value: "13.5 oz Raw Rigid" },
+                          ].map(quick => (
+                            <button
+                              key={quick.label}
+                              type="button"
+                              onClick={() => handleAddDenimSpec(quick.label, quick.value)}
+                              className="px-1.5 py-0.5 text-[9px] font-bold bg-background border border-border rounded hover:bg-muted text-muted-foreground cursor-pointer"
+                            >
+                              + {quick.label}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleAddDenimSpec()}
+                            disabled={!newDenimSpecLabel.trim()}
+                            className="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
+                          >
+                            Save Spec
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setShowAddDenimSpecInput(false); setNewDenimSpecLabel(""); setNewDenimSpecValue(""); }}
+                            className="px-2 py-1 text-xs font-bold text-muted-foreground hover:text-foreground cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+                    {denimSpecs.map((spec) => (
+                      <div key={spec.id} className="p-3 bg-muted/40 border border-border rounded-xl space-y-1.5 relative group">
+                        <div className="flex items-center justify-between">
+                          <span className="block text-[11px] font-bold text-muted-foreground truncate">{spec.label}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteDenimSpec(spec.id)}
+                            className="text-muted-foreground hover:text-rose-500 p-1 rounded-md hover:bg-rose-500/10 transition-colors cursor-pointer"
+                            title={`Delete ${spec.label}`}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                        {spec.type === "fit" ? (
+                          <select
+                            value={spec.value}
+                            onChange={(e) => handleUpdateDenimSpec(spec.id, e.target.value)}
+                            className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-bold outline-none"
+                          >
+                            {FIT_OPTIONS.map((f) => (
+                              <option key={f} value={f}>{f}</option>
+                            ))}
+                          </select>
+                        ) : spec.type === "rise" ? (
+                          <select
+                            value={spec.value}
+                            onChange={(e) => handleUpdateDenimSpec(spec.id, e.target.value)}
+                            className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-bold outline-none"
+                          >
+                            {RISE_OPTIONS.map((r) => (
+                              <option key={r} value={r}>{r}</option>
+                            ))}
+                          </select>
+                        ) : spec.type === "wash" ? (
+                          <select
+                            value={spec.value}
+                            onChange={(e) => handleUpdateDenimSpec(spec.id, e.target.value)}
+                            className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-bold outline-none"
+                          >
+                            {WASH_OPTIONS.map((w) => (
+                              <option key={w} value={w}>{w}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            value={spec.value}
+                            onChange={(e) => handleUpdateDenimSpec(spec.id, e.target.value)}
+                            className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-bold outline-none"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* SECTION 3: COLOR-FIRST ARCHITECTURE & IMAGE UPLOADER */}
+            <div className="bg-card border border-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-7 shadow-xs space-y-5 sm:space-y-6">
+              <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-border flex-wrap gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+                    <Palette size={18} className="sm:w-5 sm:h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm sm:text-base font-bold">3. Color-First Architecture & Image Uploader</h2>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground">
+                      Upload images and configure color-dependent prices, sizes, and descriptions
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={addColorway}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs"
+                >
+                  <Plus size={14} />
+                  <span>+ Add Colorway</span>
+                </button>
+              </div>
+
+              {/* COLORWAYS MANAGER BAR */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold uppercase tracking-wider text-muted-foreground">
+                    Colorways ({colorways.length}) — Drag / Move to set Default Card View
+                  </span>
+                  <span className="text-[10px] text-muted-foreground hidden sm:inline">
+                    1st colorway is default on card
+                  </span>
+                </div>
+
+                {/* Colorway Pills with Reordering */}
+                <div className="space-y-2">
+                  {colorways.map((cw, idx) => {
+                    const isEditing = cw.id === activeColorway.id;
+                    const isFirstDefault = idx === 0;
+
+                    return (
+                      <div
+                        key={cw.id}
+                        data-testid={`colorway-row-${cw.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                        onClick={() => setActiveColorwayId(cw.id)}
+                        className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer gap-2.5 ${
+                          isEditing
+                            ? "bg-blue-500/10 border-blue-500 shadow-xs ring-1 ring-blue-500"
+                            : "bg-muted/20 border-border hover:bg-muted/50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Color Swatch Dot */}
+                          <div
+                            className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-black/20 shrink-0 shadow-xs"
+                            style={{ backgroundColor: cw.hex }}
+                          />
+
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-bold text-foreground truncate">{cw.name}</span>
+                              {isFirstDefault && (
+                                <span className="bg-amber-500/15 text-amber-600 text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
+                                  <Star size={9} className="fill-amber-500" />
+                                  1st (Default on Card)
+                                </span>
+                              )}
+                              {isEditing && (
+                                <span className="bg-blue-500/15 text-blue-600 text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-md shrink-0">
+                                  Editing
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-muted-foreground pt-0.5 truncate">
+                              <span className="font-mono">{cw.hex}</span>
+                              <span>•</span>
+                              <span className="font-bold text-foreground">${parseFloat(cw.price || "0").toFixed(2)}</span>
+                              <span>•</span>
+                              <span>{cw.sizes.length} sizes</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Reordering Controls */}
+                        <div className="flex items-center gap-1 self-end sm:self-auto" onClick={(e) => e.stopPropagation()}>
+                          {!isFirstDefault && (
+                            <button
+                              type="button"
+                              onClick={() => setAsDefaultFirst(cw.id)}
+                              className="px-2 py-1 text-[10px] font-bold rounded-lg bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 transition-colors mr-1"
+                              title="Set as 1st (Default card view)"
+                            >
+                              ★ Set as 1st
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            disabled={idx === 0}
+                            onClick={() => moveColorway(idx, idx - 1)}
+                            className="p-1 sm:p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Move Up"
+                          >
+                            <ArrowUp size={12} className="sm:w-3.5 sm:h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={idx === colorways.length - 1}
+                            onClick={() => moveColorway(idx, idx + 1)}
+                            className="p-1 sm:p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Move Down (Drack down)"
+                          >
+                            <ArrowDown size={12} className="sm:w-3.5 sm:h-3.5" />
+                          </button>
+
+                          {colorways.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={(e) => removeColorway(cw.id, e)}
+                              className="p-1 sm:p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-colors ml-1"
+                              title="Delete colorway"
+                            >
+                              <Trash2 size={12} className="sm:w-3.5 sm:h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* ACTIVE COLORWAY SPECIFICATION EDITOR */}
+              <div className="bg-muted/30 border border-border rounded-2xl p-4 sm:p-6 space-y-5">
+                <div className="flex items-center justify-between pb-3 border-b border-border flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="w-4 h-4 rounded-full border border-black/20"
+                      style={{ backgroundColor: activeColorway.hex }}
+                    />
+                    <h3 className="text-xs sm:text-sm font-bold">
+                      Configuring: <span className="text-blue-600">{activeColorway.name}</span>
+                    </h3>
+                  </div>
+                  <span className="text-[11px] sm:text-xs font-mono text-muted-foreground">
+                    Hex: {activeColorway.hex}
+                  </span>
+                </div>
+
+                {/* Color Name & Hex Swatch */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                      Colorway Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={activeColorway.name}
+                      onChange={(e) => updateActiveColorway({ name: e.target.value })}
+                      placeholder="e.g. Washed Indigo"
+                      className="w-full bg-background border border-border rounded-xl px-3.5 py-2 text-xs font-bold outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                      Swatch Hex Value
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={activeColorway.hex}
+                        onChange={(e) => updateActiveColorway({ hex: e.target.value })}
+                        className="w-9 h-9 rounded-xl cursor-pointer border border-border bg-transparent p-0.5"
+                      />
+                      <input
+                        type="text"
+                        value={activeColorway.hex}
+                        onChange={(e) => updateActiveColorway({ hex: e.target.value })}
+                        className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-xs font-mono font-bold uppercase outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Fashion Palette presets */}
+                <div>
+                  <span className="block text-[11px] font-semibold text-muted-foreground mb-1.5">
+                    Fashion Presets (Click to apply to this colorway):
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {FASHION_PALETTE.map((p) => (
+                      <button
+                        key={p.name}
+                        type="button"
+                        onClick={() => updateActiveColorway({ name: p.name, hex: p.hex })}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-background border border-border hover:border-primary text-[10px] font-bold transition-all"
+                      >
+                        <span
+                          className="w-2.5 h-2.5 rounded-full border border-black/20"
+                          style={{ backgroundColor: p.hex }}
+                        />
+                        <span>{p.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Dependent Price & Stock for this specific color */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-2 border-t border-border/60">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                      Price for this Color ($) <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">$</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={activeColorway.price}
+                        onChange={(e) => updateActiveColorway({ price: e.target.value })}
+                        placeholder="195.00"
+                        className="w-full bg-background border border-border rounded-xl pl-7 pr-3 py-2 text-xs font-bold outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                      Compare-At Price ($)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">$</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={activeColorway.originalPrice}
+                        onChange={(e) => updateActiveColorway({ originalPrice: e.target.value })}
+                        placeholder="225.00"
+                        className="w-full bg-background border border-border rounded-xl pl-7 pr-3 py-2 text-xs font-medium outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                      Inventory Count
+                    </label>
+                    <input
+                      type="number"
+                      value={activeColorway.stock}
+                      onChange={(e) => updateActiveColorway({ stock: e.target.value })}
+                      placeholder="50"
+                      className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs font-medium outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Dependent Descriptions for this specific color (Multiple Descriptions) */}
+                <div className="space-y-3 pt-2 border-t border-border/60">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs font-bold uppercase tracking-wider text-foreground">
+                          Descriptions & Wash Stories for {activeColorway.name}
+                        </label>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold">
+                          {activeDescriptions.length} {activeDescriptions.length === 1 ? "note" : "notes"}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Write multiple distinct description notes, dye processes, or wash stories specifically for {activeColorway.name}.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={addDescriptionToActiveColorway}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add Description Note
+                    </button>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {activeDescriptions.map((descText, dIdx) => (
+                      <div
+                        key={dIdx}
+                        className="p-3 rounded-xl border border-border bg-card/60 space-y-1.5 transition-all focus-within:border-primary/50"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                            <span className="w-4 h-4 rounded-full bg-muted flex items-center justify-center text-[9px] font-bold text-foreground">
+                              {dIdx + 1}
+                            </span>
+                            Description Note #{dIdx + 1}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeColorwayDescriptionAt(dIdx)}
+                            className="text-muted-foreground hover:text-destructive p-1 rounded transition-colors cursor-pointer"
+                            title="Remove this note"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <textarea
+                          rows={2}
+                          value={descText}
+                          onChange={(e) => updateColorwayDescriptionAt(dIdx, e.target.value)}
+                          placeholder={`Description note #${dIdx + 1} for ${activeColorway.name} (e.g., Japanese Kurabo denim, rope-dyed indigo, unique wear-in characteristics)...`}
+                          className="w-full bg-background border border-border rounded-lg p-2.5 text-xs font-medium outline-none resize-y leading-relaxed focus:border-primary"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sizing Matrix for this specific color */}
+                <div className="space-y-3 pt-2 border-t border-border/60">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        Available Sizes for {activeColorway.name} ({activeColorway.sizes.length})
+                      </label>
+                    </div>
+
+                    <div className="flex gap-1 flex-wrap">
+                      {(Object.keys(SIZE_PRESETS) as (keyof typeof SIZE_PRESETS)[]).map((key) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => applySizePresetToActiveColorway(key)}
+                          className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-background hover:bg-muted text-muted-foreground border border-border"
+                        >
+                          {SIZE_PRESETS[key].label.split(" ")[0]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Size buttons */}
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                    {["XS", "S", "M", "L", "XL", "XXL", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "36", "O/S"].map(
+                      (sz) => {
+                        const isSelected = activeColorway.sizes.includes(sz);
+                        return (
+                          <button
+                            key={sz}
+                            type="button"
+                            onClick={() => toggleSizeForActiveColorway(sz)}
+                            className={`min-w-[36px] sm:min-w-[42px] h-8 sm:h-9 px-2 rounded-xl text-xs font-bold transition-all border flex items-center justify-center ${
+                              isSelected
+                                ? "bg-foreground text-background border-foreground shadow-xs font-black scale-105"
+                                : "bg-background border-border text-muted-foreground hover:bg-muted"
+                            }`}
+                          >
+                            {sz}
+                          </button>
+                        );
+                      }
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1 flex-wrap">
+                    <input
+                      type="text"
+                      value={customSizeInput}
+                      onChange={(e) => setCustomSizeInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addCustomSizeToActiveColorway();
+                        }
+                      }}
+                      placeholder="Custom size (38, 40R)..."
+                      className="w-36 sm:w-44 bg-background border border-border rounded-xl px-3 py-1.5 text-xs outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={addCustomSizeToActiveColorway}
+                      className="px-3 py-1.5 rounded-xl bg-accent text-xs font-bold border border-border hover:bg-accent/80"
+                    >
+                      + Add
+                    </button>
+                    <span className="text-[11px] text-muted-foreground ml-1 truncate">
+                      Active: <strong className="text-foreground">{activeColorway.sizes.join(", ")}</strong>
+                    </span>
+                  </div>
+                </div>
+
+                {/* ADVANCED IMAGE UPLOAD SUITE FOR THIS COLORWAY (MULTIPLE PICTURE ADD FEATURE) */}
+                <div className="space-y-4 pt-3 border-t border-border/60">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          Imagery for {activeColorway.name} (Shown on Card Swatch Selection)
+                        </label>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 font-bold">
+                          {[
+                            activeColorway.primaryImage,
+                            activeColorway.hoverImage,
+                            ...(activeColorway.galleryImages || []),
+                          ].filter(Boolean).length}{" "}
+                          pictures
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        Add multiple pictures, upload files in bulk, paste image URLs, or drag & drop photos for this colorway.
+                      </p>
+                    </div>
+
+                    {/* Multiple Pictures & Quick Sample Actions */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => multiFileInputRef.current?.click()}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-xs cursor-pointer"
+                        title="Upload multiple pictures at once"
+                      >
+                        <Plus size={12} />
+                        <span>Add Pictures (Multiple)</span>
+                      </button>
+                      <input
+                        ref={multiFileInputRef}
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleMultiFileInputChange}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setShowAddUrlInput(!showAddUrlInput)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold rounded-xl bg-muted border border-border text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+                        title="Paste single or multiple image URLs"
+                      >
+                        <FileImage size={12} />
+                        <span>Paste URL(s)</span>
+                      </button>
+
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-muted-foreground font-semibold hidden sm:inline">Samples:</span>
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              updateActiveColorway({ primaryImage: e.target.value });
+                              toast.success("Applied sample studio photo");
+                            }
+                          }}
+                          className="bg-background border border-border rounded-lg px-2 py-1 text-[10px] font-semibold outline-none"
+                          defaultValue=""
+                        >
+                          <option value="" disabled>
+                            Pick Sample Photo...
+                          </option>
+                          {SAMPLE_FASHION_PHOTOS.map((p) => (
+                            <option key={p.label} value={p.url}>
+                              {p.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Multiple Picture URLs Input Form */}
+                  {showAddUrlInput && (
+                    <div className="p-3 bg-muted/60 border border-blue-500/30 rounded-xl space-y-2">
+                      <span className="text-[11px] font-bold text-foreground">
+                        Add Picture URL(s) to {activeColorway.name}
+                      </span>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newImageUrlInput}
+                          onChange={(e) => setNewImageUrlInput(e.target.value)}
+                          placeholder="Paste image URL (or multiple URLs separated by commas)..."
+                          className="flex-1 bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddImageUrls}
+                          disabled={!newImageUrlInput.trim()}
+                          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
+                        >
+                          Add Picture(s)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowAddUrlInput(false);
+                            setNewImageUrlInput("");
+                          }}
+                          className="px-2 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* VISUAL MULTIPLE PICTURES GALLERY FOR THIS COLORWAY */}
+                  {(() => {
+                    const allPics: { url: string; type: "primary" | "hover" | "gallery"; idx?: number }[] = [];
+                    if (activeColorway.primaryImage) {
+                      allPics.push({ url: activeColorway.primaryImage, type: "primary" });
+                    }
+                    if (activeColorway.hoverImage && activeColorway.hoverImage !== activeColorway.primaryImage) {
+                      allPics.push({ url: activeColorway.hoverImage, type: "hover" });
+                    }
+                    (activeColorway.galleryImages || []).forEach((img, i) => {
+                      if (img && img !== activeColorway.primaryImage && img !== activeColorway.hoverImage) {
+                        allPics.push({ url: img, type: "gallery", idx: i });
+                      }
+                    });
+
+                    if (allPics.length === 0) return null;
+
+                    return (
+                      <div className="space-y-2 pt-1 bg-card/50 border border-border rounded-xl p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                            Colorway Gallery for {activeColorway.name} ({allPics.length} pictures)
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            Hover on any photo to set as Primary (shown on Card Swatch) or remove
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
+                          {allPics.map((pic, pIdx) => (
+                            <div
+                              key={`${pic.url}-${pIdx}`}
+                              className="group relative aspect-[3/4] rounded-xl overflow-hidden border border-border bg-background shadow-xs hover:border-blue-500/50 transition-all"
+                            >
+                              <img
+                                src={pic.url}
+                                alt={`${activeColorway.name} view ${pIdx + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+
+                              {/* Badges */}
+                              <div className="absolute top-1.5 left-1.5 right-1.5 flex flex-wrap gap-1">
+                                {pic.type === "primary" ? (
+                                  <span className="bg-blue-600 text-white text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded shadow-sm flex items-center gap-0.5">
+                                    <Star size={8} className="fill-white" /> Primary (Card Swatch)
+                                  </span>
+                                ) : pic.type === "hover" ? (
+                                  <span className="bg-purple-600 text-white text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded shadow-sm">
+                                    Hover Rollover
+                                  </span>
+                                ) : (
+                                  <span className="bg-black/60 backdrop-blur-xs text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow-sm">
+                                    Angle #{pIdx + 1}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Hover Actions Controls */}
+                              <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2 gap-1.5 text-center">
+                                {pic.type !== "primary" && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setAsPrimaryImage(pic.url)}
+                                    className="w-full py-1 px-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[9px] font-bold transition-colors cursor-pointer"
+                                  >
+                                    ★ Make Primary (Card Swatch)
+                                  </button>
+                                )}
+                                {pic.type !== "hover" && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setAsHoverImage(pic.url)}
+                                    className="w-full py-1 px-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-[9px] font-bold transition-colors cursor-pointer"
+                                  >
+                                    Make Hover Shot
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => removeColorwayImage(pic.url, pic.type, pic.idx)}
+                                  className="w-full py-1 px-1 bg-rose-600/90 hover:bg-rose-700 text-white rounded text-[9px] font-bold transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  <Trash2 size={10} /> Delete Picture
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* 1. PRIMARY STUDIO IMAGE UPLOAD BOX */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                          Primary Studio Image <span className="text-rose-500">*</span>
+                        </span>
+                        {activeColorway.primaryImage && (
+                          <button
+                            type="button"
+                            onClick={() => updateActiveColorway({ primaryImage: "" })}
+                            className="text-[10px] text-rose-500 hover:underline flex items-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 size={10} /> Clear
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Dropzone container */}
+                      <div
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setIsDragOverPrimary(true);
+                        }}
+                        onDragLeave={() => setIsDragOverPrimary(false)}
+                        onDrop={(e) => handleDrop(e, "primary")}
+                        onClick={() => primaryFileInputRef.current?.click()}
+                        className={`aspect-[3/4] rounded-2xl border-2 border-dashed transition-all relative overflow-hidden flex flex-col items-center justify-center cursor-pointer group ${
+                          isDragOverPrimary
+                            ? "border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/20"
+                            : "border-border hover:border-blue-500/50 bg-background hover:bg-muted/30"
+                        }`}
+                      >
+                        {activeColorway.primaryImage ? (
+                          <>
+                            <img
+                              src={activeColorway.primaryImage}
+                              alt="Primary"
+                              className="w-full h-full object-cover"
+                            />
+                            {/* Overlay Controls */}
+                            <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-3 text-white text-center gap-2">
+                              <Upload size={22} className="animate-bounce" />
+                              <span className="text-xs font-bold">Click or Drop to Replace</span>
+                              <span className="text-[10px] text-white/80">Supports PNG, JPG, WEBP</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-center p-4 space-y-2">
+                            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 mx-auto flex items-center justify-center">
+                              <Upload size={20} />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-foreground">Click to upload photo</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">or drag and drop here</p>
+                            </div>
+                            <span className="inline-block text-[9px] bg-muted px-2 py-0.5 rounded text-muted-foreground font-mono">
+                              Max 10MB
+                            </span>
+                          </div>
+                        )}
+
+                        {uploadingTarget === "primary" && (
+                          <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center text-white gap-2">
+                            <RefreshCw size={24} className="animate-spin text-blue-400" />
+                            <span className="text-xs font-bold">Uploading to media storage...</span>
+                          </div>
+                        )}
+
+                        {/* Hidden input */}
+                        <input
+                          ref={primaryFileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleFileInputChange(e, "primary")}
+                        />
+                      </div>
+
+                      {/* URL input fallback */}
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          value={activeColorway.primaryImage}
+                          onChange={(e) => updateActiveColorway({ primaryImage: e.target.value })}
+                          placeholder="Or paste external image URL..."
+                          className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-[11px] font-mono outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => primaryFileInputRef.current?.click()}
+                          className="px-2.5 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold shrink-0 hover:bg-blue-700 transition-colors flex items-center gap-1 cursor-pointer"
+                          title="Upload file"
+                        >
+                          <Upload size={12} />
+                          <span className="hidden xs:inline">Upload</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 2. HOVER LOOKBOOK IMAGE UPLOAD BOX */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                          Hover Lookbook Shot (Rollover)
+                        </span>
+                        {activeColorway.hoverImage && (
+                          <button
+                            type="button"
+                            onClick={() => updateActiveColorway({ hoverImage: "" })}
+                            className="text-[10px] text-rose-500 hover:underline flex items-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 size={10} /> Clear
+                          </button>
+                        )}
+                      </div>
+
+                      <div
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setIsDragOverHover(true);
+                        }}
+                        onDragLeave={() => setIsDragOverHover(false)}
+                        onDrop={(e) => handleDrop(e, "hover")}
+                        onClick={() => hoverFileInputRef.current?.click()}
+                        className={`aspect-[3/4] rounded-2xl border-2 border-dashed transition-all relative overflow-hidden flex flex-col items-center justify-center cursor-pointer group ${
+                          isDragOverHover
+                            ? "border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/20"
+                            : "border-border hover:border-blue-500/50 bg-background hover:bg-muted/30"
+                        }`}
+                      >
+                        {activeColorway.hoverImage ? (
+                          <>
+                            <img
+                              src={activeColorway.hoverImage}
+                              alt="Hover"
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-3 text-white text-center gap-2">
+                              <Upload size={22} className="animate-bounce" />
+                              <span className="text-xs font-bold">Click or Drop to Replace</span>
+                              <span className="text-[10px] text-white/80">Shown when customer hovers over card</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-center p-4 space-y-2">
+                            <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-500 mx-auto flex items-center justify-center">
+                              <Upload size={20} />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-foreground">Upload hover / back angle</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">or drag and drop here</p>
+                            </div>
+                            <span className="inline-block text-[9px] bg-muted px-2 py-0.5 rounded text-muted-foreground font-mono">
+                              Lookbook shot
+                            </span>
+                          </div>
+                        )}
+
+                        {uploadingTarget === "hover" && (
+                          <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center text-white gap-2">
+                            <RefreshCw size={24} className="animate-spin text-blue-400" />
+                            <span className="text-xs font-bold">Uploading to media storage...</span>
+                          </div>
+                        )}
+
+                        <input
+                          ref={hoverFileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleFileInputChange(e, "hover")}
+                        />
+                      </div>
+
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          value={activeColorway.hoverImage}
+                          onChange={(e) => updateActiveColorway({ hoverImage: e.target.value })}
+                          placeholder="Or paste hover image URL..."
+                          className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-[11px] font-mono outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => hoverFileInputRef.current?.click()}
+                          className="px-2.5 py-1.5 bg-purple-600 text-white rounded-xl text-xs font-bold shrink-0 hover:bg-purple-700 transition-colors flex items-center gap-1 cursor-pointer"
+                          title="Upload file"
+                        >
+                          <Upload size={12} />
+                          <span className="hidden xs:inline">Upload</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* GALLERY ANGLES MULTI-UPLOAD */}
+                  <div className="pt-2 border-t border-border/40">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                        Additional Angles ({activeColorway.galleryImages?.length || 0})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => galleryFileInputRef.current?.click()}
+                        className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <Upload size={12} />
+                        <span>+ Upload Angles</span>
+                      </button>
+                      <input
+                        ref={galleryFileInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => handleFileInputChange(e, "gallery")}
+                      />
+                    </div>
+
+                    {activeColorway.galleryImages && activeColorway.galleryImages.length > 0 && (
+                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 pt-1">
+                        {activeColorway.galleryImages.map((imgUrl, i) => (
+                          <div key={i} className="aspect-square rounded-xl overflow-hidden border border-border relative group">
+                            <img src={imgUrl} alt={`Angle ${i + 1}`} className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                updateActiveColorway({
+                                  galleryImages: activeColorway.galleryImages.filter((_, idx) => idx !== i),
+                                });
+                              }}
+                              className="absolute top-1 right-1 p-1 bg-black/75 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
-                  {formData.images.length > 0 && (
-                    <div className="h-64 w-64 mx-auto mt-8">
-                      <Stack
-                        cards={formData.images.map((img, i) => (
-                          <img key={i} src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover" />
-                        ))}
-                      />
-                    </div>
-                  )}
                 </div>
-              </div>
-            </section>
-
-            {/* Specifications */}
-            <section id="specs" className="bg-card border border-border rounded-2xl p-6 shadow-sm gsap-reveal">
-              <div className="flex items-center gap-2 mb-6">
-                <Package size={18} className="text-primary" />
-                <h2 className="text-sm font-bold uppercase tracking-widest">Key Specifications & Technical Data</h2>
-              </div>
-
-              <div className="space-y-8">
-                {/* Key Specifications (Bullet points) */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">General Key Specifications</label>
-                    <button
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, keySpecifications: [...prev.keySpecifications, ""] }))}
-                      className="text-[10px] font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
-                    >
-                      <Plus size={12} /> Add Key Spec
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {formData.keySpecifications.map((spec, i) => (
-                      <div key={i} className="flex gap-2">
-                        <input
-                          value={spec}
-                          onChange={(e) => {
-                            const newSpecs = [...formData.keySpecifications];
-                            newSpecs[i] = e.target.value;
-                            setFormData(prev => ({ ...prev, keySpecifications: newSpecs }));
-                          }}
-                          placeholder="e.g. 1 Year Official Warranty"
-                          className="flex-1 bg-accent/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, keySpecifications: prev.keySpecifications.filter((_, idx) => idx !== i) }))}
-                          className="p-2.5 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/5 rounded-xl transition-all"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="h-px bg-border/50" />
-
-                {/* Technical Specs (Table data) */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Detailed Technical Specifications</label>
-                    <button
-                      type="button"
-                      onClick={() => addArrayItem("specs")}
-                      className="text-[10px] font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
-                    >
-                      <Plus size={12} /> Add Tech Prop
-                    </button>
-                  </div>
-                  <div className="space-y-3">
-                    {formData.specs.map((spec, i) => (
-                      <div key={i} className="flex flex-col sm:flex-row gap-3">
-                        <input
-                          value={spec.key}
-                          onChange={(e) => handleArrayChange(i, e.target.value, "specs", "key")}
-                          placeholder="Property (e.g. RAM)"
-                          className="flex-1 bg-accent/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                        />
-                        <input
-                          value={spec.value}
-                          onChange={(e) => handleArrayChange(i, e.target.value, "specs", "value")}
-                          placeholder="Value (e.g. 16GB)"
-                          className="flex-1 bg-accent/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeArrayItem(i, "specs")}
-                          className="p-2.5 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/5 rounded-xl transition-all self-end sm:self-auto"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <div className="flex gap-4 pt-4 gsap-reveal">
-              <button
-                type="button"
-                onClick={() => setShowPreview(true)}
-                className="flex-1 btn-outline py-4 rounded-2xl font-bold uppercase tracking-widest flex items-center justify-center gap-2"
-              >
-                <Eye size={18} />
-                Preview
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 btn-primary py-4 rounded-2xl font-bold uppercase tracking-widest shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <Save size={18} />
-                    Save Product
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        </main>
-      ) : (
-        <main className="neo-container py-8 pt-24 max-w-5xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setShowPreview(false)}
-                className="p-2 hover:bg-accent rounded-full transition-colors"
-              >
-                <ChevronLeft size={24} />
-              </button>
-              <div>
-                <div className="flex items-center gap-2 text-primary mb-1">
-                  <Eye size={14} />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Preview Mode</span>
-                </div>
-                <h1 className="text-2xl font-display font-bold">Product Preview</h1>
               </div>
             </div>
-            <div className="hidden sm:flex items-center gap-3">
-              <button
-                onClick={() => setShowPreview(false)}
-                className="btn-outline px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest"
-              >
-                Back to Edit
-              </button>
-              <button
-                onClick={() => { setShowPreview(false); handleSubmit(); }}
-                disabled={loading}
-                className="btn-primary px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center gap-2"
-              >
-                {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={16} />}
-                Publish Product
-              </button>
+
+            {/* SECTION 4: FABRIC COMPOSITION & CARE */}
+            <div className="bg-card border border-border rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-7 shadow-xs space-y-5 sm:space-y-6">
+              <div className="flex items-center gap-3 pb-3 sm:pb-4 border-b border-border">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center shrink-0">
+                  <ShieldCheck size={18} className="sm:w-5 sm:h-5" />
+                </div>
+                <div>
+                  <h2 className="text-sm sm:text-base font-bold">4. Fabric Composition & Laundering Care</h2>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground">
+                    Sizing guidelines and laundering instructions
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                    Size & Fit Model Editorial Notes
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={sizeAndFit}
+                    onChange={(e) => setSizeAndFit(e.target.value)}
+                    placeholder="e.g. Model is 6'1 wearing size 32 waist..."
+                    className="w-full bg-muted/40 border border-border rounded-xl p-3 text-xs font-medium outline-none resize-none leading-relaxed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                    Garment Laundering & Care Instructions
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={care}
+                    onChange={(e) => setCare(e.target.value)}
+                    placeholder="e.g. Machine wash cold inside out..."
+                    className="w-full bg-muted/40 border border-border rounded-xl p-3 text-xs font-medium outline-none resize-none leading-relaxed"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="bg-card border border-border rounded-[2.5rem] overflow-hidden shadow-sm mb-20">
-            <div className="p-6 sm:p-12 space-y-12">
-              {/* Main Product Section (Mimicking Detail Page) */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
-                {/* Left: Image/3D Showcase */}
-                <div className="space-y-6">
-                  <div className="aspect-[4/5] sm:aspect-square rounded-3xl overflow-hidden border border-border bg-accent/20 relative group">
-                    {formData.image ? (
-                      <img src={formData.image} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground gap-3">
-                        <ImageIcon size={48} className="opacity-20" />
-                        <span className="text-xs font-bold uppercase tracking-widest">No Main Image</span>
-                      </div>
-                    )}
+          {/* SECTION 5: LIVE STOREFRONT CARD PREVIEW (5 COLS ON LAPTOPS, 4 ON 2XL DESKTOPS) */}
+          <div className="hidden lg:block lg:col-span-5 xl:col-span-5 2xl:col-span-4 sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto space-y-6 pr-1 custom-scrollbar">
+            <div className="bg-card border border-border rounded-3xl p-5 xl:p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-border">
+                <span className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                  <Sparkles size={14} />
+                  Live Storefront Card
+                </span>
+                <span className="text-[10px] text-muted-foreground font-mono">Real-time sync</span>
+              </div>
 
-                    {formData.discount && (
-                      <div className="absolute top-4 left-4 bg-primary text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-lg">
-                        {formData.discount}% OFF
-                      </div>
-                    )}
-                  </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Click any color swatch below to preview how customers experience the card on the storefront.
+                The <strong>1st colorway</strong> ({colorways[0]?.name}) is the default.
+              </p>
 
-                  {/* Gallery Strip */}
-                  <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-                    {formData.images.map((img, i) => (
-                      <div key={i} className="w-20 h-20 flex-shrink-0 rounded-xl border border-border overflow-hidden bg-accent/20">
-                        <img src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                      </div>
-                    ))}
+              {/* Exact Storefront Product Card Rendering */}
+              <div
+                className="bg-background border border-border/80 rounded-2xl overflow-hidden shadow-sm transition-all"
+                onMouseEnter={() => setPreviewHovered(true)}
+                onMouseLeave={() => setPreviewHovered(false)}
+              >
+                {/* Image Aspect Box with Hover Transition */}
+                <div className="aspect-[3/4] bg-muted/30 relative overflow-hidden group">
+                  <img
+                    src={
+                      (previewHovered && cardPreviewColorway.hoverImage
+                        ? cardPreviewColorway.hoverImage
+                        : cardPreviewColorway.primaryImage) ||
+                      "https://images.unsplash.com/photo-1542272604-780c96856592?w=800"
+                    }
+                    alt={title || "Preview"}
+                    className="w-full h-full object-cover transition-all duration-500"
+                  />
+
+                  {/* Merchandising Badge */}
+                  {badge && (
+                    <span className="absolute top-3 left-3 bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 shadow-sm">
+                      {badge}
+                    </span>
+                  )}
+
+                  {/* Indicator of which color is currently displayed on the card */}
+                  <div className="absolute bottom-2 left-2 right-2 bg-black/75 backdrop-blur-xs text-white px-2.5 py-1 text-[10px] flex items-center justify-between rounded-md">
+                    <span className="font-semibold truncate">Showing: {cardPreviewColorway.name}</span>
+                    {cardPreviewColorway.id === colorways[0].id && (
+                      <span className="text-[9px] font-bold text-amber-400 shrink-0">★ Default (1st)</span>
+                    )}
                   </div>
                 </div>
 
-                {/* Right: Info */}
-                <div className="space-y-8">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">{formData.brand || "Brand Name"}</span>
-                      <div className="w-1 h-1 rounded-full bg-border" />
-                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{formData.category || "Category"}</span>
-                    </div>
-                    <h4 className="text-3xl sm:text-4xl font-display font-bold tracking-tight leading-tight">{formData.name || "Product Name"}</h4>
+                {/* Card Details (Dynamically bound to the chosen swatch!) */}
+                <div className="p-4 space-y-3">
+                  {/* Brand & Category line */}
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground uppercase font-bold tracking-wider">
+                    <span>{brand}</span>
+                    <span className="text-primary">{currentCategoryObj?.title || selectedCategory}</span>
                   </div>
 
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-3xl font-bold tracking-tight">PKR {formData.price || "0"}</span>
-                    {formData.originalPrice && (
-                      <span className="text-lg text-muted-foreground line-through decoration-primary/40">PKR {formData.originalPrice}</span>
-                    )}
-                  </div>
-
-                  <div className="space-y-4">
-                    <h5 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Available Colors</h5>
-                    <div className="flex flex-wrap gap-3">
-                      {formData.colors.map(c => (
-                        <div key={c.name} className="group relative">
-                          <div className="w-8 h-8 rounded-full border-2 border-border p-0.5 transition-transform group-hover:scale-110">
-                            <div className="w-full h-full rounded-full shadow-inner" style={{ backgroundColor: c.hex }} />
-                          </div>
-                          <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[8px] font-bold uppercase opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">{c.name}</span>
-                        </div>
-                      ))}
-                      {formData.colors.length === 0 && <span className="text-xs text-muted-foreground italic">No colors selected</span>}
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 pt-4 border-t border-border">
-                    <h5 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Quick Specs</h5>
-                    <div className="grid grid-cols-2 gap-3">
-                      {formData.specs.slice(0, 4).map((s, i) => (
-                        <div key={i} className="flex items-center gap-2 text-xs">
-                          <div className="w-1.5 h-1.5 rounded-full bg-primary/40" />
-                          <span className="font-medium text-muted-foreground">{s.key}:</span>
-                          <span className="font-bold">{s.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 pt-4">
-                    {formData.collections.map(c => (
-                      <span key={c} className="px-3 py-1.5 bg-accent/50 text-[9px] font-bold uppercase tracking-widest rounded-full border border-border">
-                        {c}
+                  {/* Title & Selected Colorway */}
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">
+                      {title || "Untitled Garment"}
+                      <span className="text-muted-foreground font-normal italic">
+                        {" - "}
+                        {cardPreviewColorway.name}
                       </span>
-                    ))}
+                    </h3>
+                  </div>
+
+                  {/* MULTIPLE COLOR SWATCHES ROW */}
+                  <div className="space-y-1 pt-1 border-t border-border/50">
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                      <span className="font-semibold uppercase tracking-wider">Colorways:</span>
+                      <span className="font-medium text-foreground">{cardPreviewColorway.name}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                      {colorways.map((cw, idx) => {
+                        const isCardActive = cw.id === cardPreviewColorway.id;
+                        const isFirstDefault = idx === 0;
+
+                        return (
+                          <button
+                            key={cw.id}
+                            type="button"
+                            onClick={() => setPreviewActiveSwatchId(cw.id)}
+                            title={`${cw.name} - $${parseFloat(cw.price || "0").toFixed(2)} ${
+                              isFirstDefault ? "(1st / Default)" : ""
+                            }`}
+                            className={`w-5 h-5 rounded-sm transition-all relative ${
+                              isCardActive
+                                ? "ring-2 ring-black ring-offset-1 scale-110 shadow-xs"
+                                : "border border-black/25 opacity-80 hover:opacity-100"
+                            }`}
+                            style={{ backgroundColor: cw.hex }}
+                          >
+                            {isFirstDefault && (
+                              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-500 border border-white" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* DYNAMIC PRICE FOR CHOSEN COLORWAY */}
+                  <div className="flex items-baseline gap-2 pt-1">
+                    <span className="text-sm font-black text-foreground">
+                      ${parseFloat(cardPreviewColorway.price || "0").toFixed(2)}
+                    </span>
+                    {cardPreviewColorway.originalPrice &&
+                      parseFloat(cardPreviewColorway.originalPrice) >
+                        parseFloat(cardPreviewColorway.price || "0") && (
+                        <span className="text-xs text-muted-foreground line-through">
+                          ${parseFloat(cardPreviewColorway.originalPrice).toFixed(2)}
+                        </span>
+                      )}
+                  </div>
+
+                  {/* DYNAMIC DESCRIPTION STORY FOR CHOSEN COLORWAY */}
+                  {cardPreviewColorway.description && (
+                    <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                      {cardPreviewColorway.description}
+                    </p>
+                  )}
+
+                  {/* DYNAMIC SIZES FOR CHOSEN COLORWAY */}
+                  <div className="pt-2 border-t border-border/50">
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                      Available Sizes for {cardPreviewColorway.name}:
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {cardPreviewColorway.sizes.map((sz) => (
+                        <span
+                          key={sz}
+                          onClick={() => setPreviewSelectedSize(sz)}
+                          className={`px-2 py-0.5 text-[10px] font-bold rounded cursor-pointer transition-all ${
+                            previewSelectedSize === sz
+                              ? "bg-foreground text-background"
+                              : "bg-muted text-muted-foreground hover:bg-muted/80"
+                          }`}
+                        >
+                          {sz}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Reset to 1st Colorway button */}
+                  {cardPreviewColorway.id !== colorways[0].id && (
+                    <button
+                      type="button"
+                      onClick={() => setPreviewActiveSwatchId(colorways[0].id)}
+                      className="w-full text-center text-[10px] font-bold text-blue-600 hover:underline pt-1"
+                    >
+                      ↺ Reset card view to 1st Colorway ({colorways[0].name})
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Ready to Publish Checklist */}
+              <div className="bg-muted/40 rounded-2xl p-4 space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-1">
+                  Launch Checklist
+                </span>
+                <div className="space-y-1.5 text-xs font-semibold">
+                  <div className="flex items-center gap-2">
+                    {title.trim() ? (
+                      <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
+                    ) : (
+                      <AlertCircle size={14} className="text-amber-500 shrink-0" />
+                    )}
+                    <span className={title.trim() ? "text-foreground" : "text-muted-foreground"}>
+                      Garment title specified
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {colorways.length > 0 ? (
+                      <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
+                    ) : (
+                      <AlertCircle size={14} className="text-amber-500 shrink-0" />
+                    )}
+                    <span className="text-foreground">
+                      {colorways.length} Colorway(s) configured (1st: {colorways[0]?.name})
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {colorways[0]?.sizes.length > 0 ? (
+                      <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
+                    ) : (
+                      <AlertCircle size={14} className="text-amber-500 shrink-0" />
+                    )}
+                    <span className="text-foreground">
+                      {colorways[0]?.sizes.length} sizes in default colorway
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {colorways[0]?.primaryImage ? (
+                      <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
+                    ) : (
+                      <AlertCircle size={14} className="text-amber-500 shrink-0" />
+                    )}
+                    <span className="text-foreground">Default studio photography ready</span>
                   </div>
                 </div>
               </div>
 
+              {/* Bottom Submit Button */}
+              <button
+                type="button"
+                onClick={() => handleSubmit()}
+                disabled={loading}
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-sm transition-all shadow-lg shadow-blue-600/25 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
+                <span>{loading ? "Publishing Garment..." : "Publish to Luma Threads"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
 
-              {/* Tabs Section */}
-              <div className="space-y-6 pt-12 border-t border-border">
-                <div className="flex gap-8 border-b border-border">
-                  {(["description", "specs"] as const).map(tab => (
+      {/* MOBILE / TABLET FLOATING ACTION BAR: BOTTOM FIXED */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-t border-border p-3 flex items-center justify-between gap-3 shadow-lg">
+        <button
+          type="button"
+          onClick={() => setShowPreviewModal(true)}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-border text-xs font-bold hover:bg-muted transition-all"
+        >
+          <Eye size={15} />
+          <span>Card Preview ({colorways.length} colors)</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleSubmit()}
+          disabled={loading}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-blue-600 text-white text-xs font-bold shadow-md shadow-blue-600/20 active:scale-95 disabled:opacity-50"
+        >
+          {loading ? <RefreshCw size={15} className="animate-spin" /> : <Save size={15} />}
+          <span>{loading ? "Publishing..." : "Publish Garment"}</span>
+        </button>
+      </div>
+
+      {/* MOBILE / TABLET LIVE PREVIEW MODAL / DRAWER */}
+      {showPreviewModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-card border border-border w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <span className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                <Sparkles size={14} />
+                Live Storefront Card Preview
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowPreviewModal(false)}
+                className="p-1 rounded-lg text-muted-foreground hover:text-foreground"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Exact Card Preview */}
+            <div className="bg-background border border-border rounded-2xl overflow-hidden shadow-sm">
+              <div className="aspect-[3/4] bg-muted/30 relative overflow-hidden">
+                <img
+                  src={
+                    cardPreviewColorway.primaryImage ||
+                    "https://images.unsplash.com/photo-1542272604-780c96856592?w=800"
+                  }
+                  alt={title || "Preview"}
+                  className="w-full h-full object-cover"
+                />
+                {badge && (
+                  <span className="absolute top-3 left-3 bg-red-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5">
+                    {badge}
+                  </span>
+                )}
+                <div className="absolute bottom-2 left-2 right-2 bg-black/75 text-white px-2.5 py-1 text-[10px] flex items-center justify-between rounded-md">
+                  <span className="font-semibold truncate">Showing: {cardPreviewColorway.name}</span>
+                </div>
+              </div>
+
+              <div className="p-4 space-y-2.5">
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground uppercase font-bold">
+                  <span>{brand}</span>
+                  <span className="text-primary">{currentCategoryObj?.title || selectedCategory}</span>
+                </div>
+                <h3 className="text-sm font-bold text-foreground">
+                  {title || "Untitled Garment"} - {cardPreviewColorway.name}
+                </h3>
+
+                {/* Swatches */}
+                <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                  {colorways.map((cw) => (
                     <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={`pb-4 text-xs font-bold uppercase tracking-widest transition-all border-b-2 ${activeTab === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
-                        }`}
-                    >
-                      {tab === "specs" ? "Specifications" : "Description"}
-                    </button>
+                      key={cw.id}
+                      type="button"
+                      onClick={() => setPreviewActiveSwatchId(cw.id)}
+                      className={`w-6 h-6 rounded-sm ${
+                        cw.id === cardPreviewColorway.id ? "ring-2 ring-black ring-offset-1" : "opacity-75"
+                      }`}
+                      style={{ backgroundColor: cw.hex }}
+                    />
                   ))}
                 </div>
 
-                <div className="min-h-[200px]">
-                  {activeTab === "description" ? (
-                    <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
-                      {formData.description || "No description provided for this product."}
-                    </p>
-                  ) : (
-                    <div className="max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {formData.specs.filter(s => s.key && s.value).map((s, i) => (
-                        <div key={i} className="flex items-center justify-between p-4 bg-accent/30 rounded-2xl border border-border">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{s.key}</span>
-                          <span className="text-sm font-bold">{s.value}</span>
-                        </div>
-                      ))}
-                      {formData.specs.filter(s => s.key && s.value).length === 0 && (
-                        <p className="text-xs text-muted-foreground italic col-span-full">No detailed specifications added.</p>
-                      )}
-                    </div>
-                  )}
+                <div className="text-sm font-black text-foreground pt-1">
+                  ${parseFloat(cardPreviewColorway.price || "0").toFixed(2)}
+                </div>
+
+                <div className="flex flex-wrap gap-1 pt-1 border-t border-border/50">
+                  {cardPreviewColorway.sizes.map((sz) => (
+                    <span key={sz} className="px-2 py-0.5 text-[10px] font-bold rounded bg-muted">
+                      {sz}
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>
 
-            {/* Footer Actions */}
-            <div className="p-6 sm:p-12 border-t border-border flex flex-col sm:flex-row gap-4 bg-accent/10">
-              <button
-                onClick={() => setShowPreview(false)}
-                className="flex-1 btn-outline py-4 rounded-2xl font-bold uppercase tracking-widest text-xs"
-              >
-                Back to Edit
-              </button>
-              <button
-                onClick={() => { setShowPreview(false); handleSubmit(); }}
-                disabled={loading}
-                className="flex-1 btn-primary py-4 rounded-2xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-xl shadow-primary/20"
-              >
-                {loading ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <CheckCircle2 size={18} />
-                    Publish Product
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </main>
-      )}
-      {/* Confirmation Modal */}
-      {pendingDeleteCollection && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-lg shadow-lg max-w-sm w-full p-6 space-y-4">
-            <h2 className="text-lg font-bold">Are you sure?</h2>
-            <p className="text-sm text-muted-foreground">
-              Are you sure you want to delete "{pendingDeleteCollection.name}"? This action cannot be undone and will remove the collection from all products and the storefront.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setPendingDeleteCollection(null)}
-                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm font-semibold hover:bg-secondary/80"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={executeDeleteCollection}
-                className="px-4 py-2 bg-rose-500 text-white rounded-lg text-sm font-semibold hover:bg-rose-600"
-              >
-                Delete
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowPreviewModal(false)}
+              className="w-full py-2.5 bg-foreground text-background rounded-xl font-bold text-xs"
+            >
+              Close Preview
+            </button>
           </div>
         </div>
       )}
     </div>
   );
-};
-
-export default AddProduct;
+}

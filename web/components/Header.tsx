@@ -1,12 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCart } from "./CartProvider";
 import { useAuth } from "./AuthProvider";
 
-const navItems = [
+export type NavLinkItem = { label: string; href: string };
+export type MegaMenuColumn = { title: string; links: NavLinkItem[] };
+export type NavItem = {
+  label: string;
+  href: string;
+  megaMenu?: MegaMenuColumn[];
+};
+
+const DEFAULT_NAV_ITEMS: NavItem[] = [
   {
     label: "NEW",
     href: "/collections/all-new",
@@ -76,6 +84,20 @@ const navItems = [
     ],
   },
   {
+    label: "COLLECTIONS",
+    href: "/collections/all-new",
+    megaMenu: [
+      {
+        title: "Curated Drops & Capsules",
+        links: [
+          { label: "All Denim", href: "/collections/all-denim" },
+          { label: "All New", href: "/collections/all-new" },
+          { label: "Best Sellers", href: "/collections/best-sellers" },
+        ],
+      },
+    ],
+  },
+  {
     label: "BEST SELLERS",
     href: "/collections/best-sellers",
   },
@@ -89,6 +111,184 @@ const navItems = [
   },
 ];
 
+function buildDynamicNavItems(
+  dbCategories: any[],
+  dbCollections: any[]
+): NavItem[] {
+  if (
+    (!dbCategories || dbCategories.length === 0) &&
+    (!dbCollections || dbCollections.length === 0)
+  ) {
+    return DEFAULT_NAV_ITEMS;
+  }
+
+  // 1. Denim Category & Subcategories
+  const denimCategory = dbCategories.find(
+    (c) =>
+      (c.handle || "").toLowerCase() === "denim" ||
+      (c.title || "").toLowerCase() === "denim"
+  );
+
+  const denimFitLinks: NavLinkItem[] = [
+    { label: "Shop All Denim", href: "/collections/all-denim" },
+  ];
+
+  if (denimCategory?.subcategories && denimCategory.subcategories.length > 0) {
+    denimCategory.subcategories.forEach((sub: any) => {
+      denimFitLinks.push({
+        label: sub.title || sub.name,
+        href: `/collections/${sub.handle || sub.slug || "all-denim"}`,
+      });
+    });
+  } else {
+    denimFitLinks.push(
+      { label: "Barrel", href: "/collections/barrel-jeans" },
+      { label: "Straight", href: "/collections/straight-jeans" },
+      { label: "Skinny", href: "/collections/skinny-jeans" },
+      { label: "Bootcut", href: "/collections/bootcut-jeans" },
+      { label: "Wide Leg", href: "/collections/wide-leg-jeans" },
+      { label: "Flare", href: "/collections/flare-jeans" }
+    );
+  }
+
+  const denimMegaMenu: MegaMenuColumn[] = [
+    {
+      title: "Shop By Fit",
+      links: denimFitLinks,
+    },
+    {
+      title: "By Rise",
+      links: [
+        { label: "High Rise", href: "/collections/high-rise-denim" },
+        { label: "Mid Rise", href: "/collections/mid-rise-denim" },
+        { label: "Low Rise", href: "/collections/low-rise-denim" },
+      ],
+    },
+    {
+      title: "By Wash",
+      links: [
+        { label: "Light Wash", href: "/collections/light-wash" },
+        { label: "Dark Wash", href: "/collections/dark-wash" },
+        { label: "Black", href: "/collections/black-denim" },
+        { label: "White", href: "/collections/white-denim" },
+      ],
+    },
+  ];
+
+  // 2. Apparel / Clothing Dynamic MegaMenu
+  const nonDenimCategories = dbCategories.filter((c) => {
+    const h = (c.handle || "").toLowerCase();
+    const t = (c.title || "").toLowerCase();
+    return h !== "denim" && t !== "denim" && h !== "haha";
+  });
+
+  const clothingColumns: MegaMenuColumn[] = [];
+
+  // Column 1: All Primary Categories
+  clothingColumns.push({
+    title: "All Categories",
+    links: [
+      { label: "Shop All", href: "/collections/all-new" },
+      ...nonDenimCategories.map((cat) => ({
+        label: cat.title || cat.name,
+        href: `/collections/${cat.handle || cat.slug || "all-new"}`,
+      })),
+    ],
+  });
+
+  // Columns 2+: Detailed subcategories for categories that have them
+  const categoriesWithSubs = nonDenimCategories.filter(
+    (c) => c.subcategories && c.subcategories.length > 0
+  );
+
+  categoriesWithSubs.slice(0, 3).forEach((cat) => {
+    clothingColumns.push({
+      title: cat.title || cat.name,
+      links: cat.subcategories.map((sub: any) => ({
+        label: sub.title || sub.name,
+        href: `/collections/${sub.handle || sub.slug || cat.handle}`,
+      })),
+    });
+  });
+
+  // 3. Dynamic Collections / Drops
+  const collectionLinks: NavLinkItem[] = dbCollections.map((col) => ({
+    label: col.title || col.name,
+    href: `/collections/${col.handle || col.slug || "all-new"}`,
+  }));
+
+  const collectionsMegaMenu: MegaMenuColumn[] = [
+    {
+      title: "Curated Drops & Capsules",
+      links:
+        collectionLinks.length > 0
+          ? collectionLinks
+          : [
+              { label: "All Denim", href: "/collections/all-denim" },
+              { label: "All New", href: "/collections/all-new" },
+              { label: "Best Sellers", href: "/collections/best-sellers" },
+            ],
+    },
+    {
+      title: "Seasonal Edits",
+      links: [
+        { label: "New Arrivals", href: "/collections/all-new" },
+        { label: "Signature Essentials", href: "/collections/all-denim" },
+        { label: "Best Sellers", href: "/collections/best-sellers" },
+      ],
+    },
+  ];
+
+  return [
+    {
+      label: "NEW",
+      href: "/collections/all-new",
+      megaMenu: [
+        {
+          title: "New Arrivals",
+          links: [
+            { label: "Shop All New", href: "/collections/all-new" },
+            { label: "New Denim", href: "/collections/all-denim" },
+            { label: "New Tops", href: "/collections/all-new" },
+            { label: "New Bottoms", href: "/collections/all-denim" },
+            ...dbCollections.slice(0, 3).map((col) => ({
+              label: col.title || col.name,
+              href: `/collections/${col.handle || col.slug}`,
+            })),
+          ],
+        },
+      ],
+    },
+    {
+      label: "DENIM",
+      href: "/collections/all-denim",
+      megaMenu: denimMegaMenu,
+    },
+    {
+      label: "CLOTHING",
+      href: "/collections/all-new",
+      megaMenu: clothingColumns.length > 0 ? clothingColumns : undefined,
+    },
+    {
+      label: "COLLECTIONS",
+      href: "/collections/all-new",
+      megaMenu: collectionsMegaMenu,
+    },
+    {
+      label: "BEST SELLERS",
+      href: "/collections/best-sellers",
+    },
+    {
+      label: "ABOUT",
+      href: "/pages/about-us",
+    },
+    {
+      label: "SALE",
+      href: "/collections/best-sellers",
+    },
+  ];
+}
+
 export function Header() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -96,6 +296,43 @@ export function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const { totalItems, openCart } = useCart();
   const { orders, hasOrders, isLoggedIn, user, logout } = useAuth();
+  const [navItems, setNavItems] = useState<NavItem[]>(DEFAULT_NAV_ITEMS);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadDynamicNavigation() {
+      try {
+        const [catsRes, colsRes] = await Promise.all([
+          fetch("/api/store/categories/").then((r) =>
+            r.ok ? r.json() : null
+          ),
+          fetch("/api/store/collections/").then((r) =>
+            r.ok ? r.json() : null
+          ),
+        ]);
+
+        const cats = Array.isArray(catsRes)
+          ? catsRes
+          : catsRes?.results || [];
+        const cols = Array.isArray(colsRes)
+          ? colsRes
+          : colsRes?.results || [];
+
+        if (isMounted && (cats.length > 0 || cols.length > 0)) {
+          setNavItems(buildDynamicNavItems(cats, cols));
+        }
+      } catch (err) {
+        console.warn("Could not load dynamic nav items, using fallback:", err);
+      }
+    }
+
+    loadDynamicNavigation();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   if (pathname?.startsWith("/admin")) {
     return null;
@@ -110,22 +347,6 @@ export function Header() {
 
   return (
     <>
-      {/* Announcement Bar */}
-      <div
-        className="announcement-bar color-scheme-1 gradient"
-        role="region"
-        aria-label="Announcement"
-      >
-        <div className="announcement-bar__wrapper">
-          <Link href="/collections/all-new" className="announcement-bar__link">
-            <p className="announcement-bar__message">
-              FREE SHIPPING ON ORDERS OVER $150 &nbsp;|&nbsp; COMPLIMENTARY US
-              RETURNS
-            </p>
-          </Link>
-        </div>
-      </div>
-
       {/* Sticky Header */}
       <div className="section-header">
         <div className="header-wrapper color-scheme-1 gradient">
@@ -186,12 +407,17 @@ export function Header() {
               </Link>
             </h1>
 
-            {/* Right: Icons */}
+            {/* Right: Icons & Customer Navigation */}
             <div
               className="header__icons"
-              style={{ display: "flex", alignItems: "center", gap: "1rem", justifySelf: "end" }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.75rem",
+                justifySelf: "end",
+              }}
             >
-              {/* Conditional Track Order button in the top header */}
+              {/* User Friendly Responsive Track Orders Pill */}
               {hasOrders && (
                 <Link
                   href="/track"
@@ -201,17 +427,17 @@ export function Header() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "6px",
-                    padding: "6px 12px",
+                    padding: "6px 10px",
                     background: "#f4f4f5",
-                    color: "#18181b",
+                    color: "#09090b",
                     border: "1px solid #e4e4e7",
-                    borderRadius: "4px",
+                    borderRadius: "9999px",
                     fontSize: "11px",
                     fontWeight: 600,
-                    letterSpacing: "1px",
+                    letterSpacing: "0.5px",
                     textTransform: "uppercase",
                     textDecoration: "none",
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                    transition: "all 0.2s ease",
                   }}
                 >
                   <svg
@@ -220,50 +446,133 @@ export function Header() {
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="1.8"
+                    strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                    style={{ flexShrink: 0 }}
                   >
                     <rect x="1" y="3" width="15" height="13" />
                     <polygon points="16 8 20 8 23 11 23 16 16 16 8" />
                     <circle cx="5.5" cy="18.5" r="2.5" />
                     <circle cx="18.5" cy="18.5" r="2.5" />
                   </svg>
-                  <span>Track ({orders.length})</span>
+                  <span className="hidden xs:inline">Track</span>
+                  <span
+                    style={{
+                      minWidth: "18px",
+                      height: "18px",
+                      padding: "0 4px",
+                      background: "#000",
+                      color: "#fff",
+                      borderRadius: "9999px",
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {orders.length}
+                  </span>
                 </Link>
               )}
 
-              {/* User Account / Sign In */}
+              {/* User-friendly Account Profile Pill with Avatar & Exit Button */}
               {isLoggedIn ? (
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "4px 8px 4px 6px",
+                    background: "#f8f9fa",
+                    border: "1px solid #e9ecef",
+                    borderRadius: "9999px",
+                    transition: "all 0.2s ease",
+                  }}
+                >
                   <Link
                     href="/orders/track"
-                    title={`Signed in as ${user?.email}`}
+                    title={`Account & Orders (${user?.email})`}
                     style={{
-                      fontSize: "11px",
-                      fontWeight: 600,
-                      color: "#000",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
                       textDecoration: "none",
-                      letterSpacing: "0.5px",
+                      color: "#000",
                     }}
                   >
-                    Hi, {user?.name?.split(" ")[0]}
+                    <div
+                      style={{
+                        width: "22px",
+                        height: "22px",
+                        borderRadius: "50%",
+                        background: "#000",
+                        color: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "10px",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {user?.name ? user.name.trim()[0].toUpperCase() : "U"}
+                    </div>
+                    <span
+                      className="hidden sm:inline"
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        letterSpacing: "0.2px",
+                        maxWidth: "100px",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Hi, {user?.name ? user.name.trim().split(" ")[0] : "Guest"}
+                    </span>
                   </Link>
+
                   <button
                     type="button"
                     onClick={logout}
-                    title="Sign Out"
+                    title="Sign Out (Exit)"
+                    aria-label="Sign Out"
                     style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                       background: "none",
                       border: "none",
                       cursor: "pointer",
-                      fontSize: "10px",
-                      color: "#888",
-                      textDecoration: "underline",
-                      padding: 0,
+                      padding: "2px",
+                      color: "#6c757d",
+                      borderRadius: "50%",
+                      transition: "color 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.color = "#dc3545";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.color = "#6c757d";
                     }}
                   >
-                    (Exit)
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <polyline points="16 17 21 12 16 7" />
+                      <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
                   </button>
                 </div>
               ) : (
@@ -277,12 +586,13 @@ export function Header() {
                     color: "#000",
                     display: "inline-flex",
                     alignItems: "center",
+                    padding: "0.4rem",
                   }}
                 >
                   <span className="svg-wrapper">
                     <svg
-                      width="16"
-                      height="16"
+                      width="18"
+                      height="18"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"

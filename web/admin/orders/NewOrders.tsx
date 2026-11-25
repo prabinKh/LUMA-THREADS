@@ -3,7 +3,7 @@ import AdminOrders from "../Orders";
 const NewOrders = () => {
   return (
     <AdminOrders 
-      filterStatus="new"
+      excludeStatuses={["delivered", "cancelled"]}
     />
   );
 };

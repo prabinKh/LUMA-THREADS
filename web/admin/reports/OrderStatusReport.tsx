@@ -87,7 +87,7 @@ const OrderStatusReport = () => {
   return (
     <div className="flex-1 min-h-screen overflow-y-auto no-scrollbar pb-20 lg:pb-0" ref={containerRef}>
 
-        <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-8">
+        <div className="p-4 lg:p-8 w-full space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 gsap-reveal">
             {/* Pie Chart */}
             <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">

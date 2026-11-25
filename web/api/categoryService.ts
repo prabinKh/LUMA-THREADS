@@ -1,6 +1,32 @@
 import axiosInstance from "./axiosConfig";
 import { type Category } from "@/lib/types";
 
+function normalizeCategory(c: any): Category {
+  if (!c || typeof c !== "object") return c;
+  const name = c.name || c.title || "";
+  const title = c.title || c.name || "";
+  const slug = c.slug || c.handle || "";
+  const handle = c.handle || c.slug || "";
+  const subcategories = Array.isArray(c.subcategories)
+    ? c.subcategories.map((s: any) => ({
+        ...s,
+        name: s.name || s.title || "",
+        title: s.title || s.name || "",
+        slug: s.slug || s.handle || "",
+        handle: s.handle || s.slug || "",
+      }))
+    : [];
+
+  return {
+    ...c,
+    name,
+    title,
+    slug,
+    handle,
+    subcategories,
+  };
+}
+
 export const categoryService = {
   async getAll(options?: { company?: string }) {
     try {
@@ -8,12 +34,13 @@ export const categoryService = {
         params: options
       });
       const data = response.data;
+      let list: any[] = [];
       if (Array.isArray(data)) {
-        return data as Category[];
+        list = data;
       } else if (data && typeof data === 'object' && 'results' in data && Array.isArray((data as Record<string, unknown>).results)) {
-        return (data as Record<string, unknown>).results as Category[];
+        list = (data as Record<string, unknown>).results as any[];
       }
-      return [] as Category[];
+      return list.map(normalizeCategory) as Category[];
     } catch (error) {
       console.error("Error fetching categories:", error);
       return [];
@@ -23,7 +50,7 @@ export const categoryService = {
   async getBySlug(slug: string) {
     try {
       const response = await axiosInstance.get(`/store/categories/${slug}/`);
-      return response.data as Category;
+      return normalizeCategory(response.data) as Category;
     } catch (error) {
       console.error(`Error fetching category ${slug}:`, error);
       return null;
@@ -82,6 +109,46 @@ export const categoryService = {
       return true;
     } catch (error) {
       console.error(`Error deleting category ${slug}:`, error);
+      throw error;
+    }
+  },
+
+  async createCategory(data: { title: string; handle?: string }) {
+    try {
+      const response = await axiosInstance.post("/admin/categories/add/", data);
+      return response.data;
+    } catch (error) {
+      console.error("Error creating category:", error);
+      throw error;
+    }
+  },
+
+  async createSubCategory(data: { title: string; handle?: string; category_id: string | number }) {
+    try {
+      const response = await axiosInstance.post("/admin/categories/add/", data);
+      return response.data;
+    } catch (error) {
+      console.error("Error creating subcategory:", error);
+      throw error;
+    }
+  },
+
+  async deleteCategory(idOrHandle: string | number) {
+    try {
+      const response = await axiosInstance.delete(`/admin/categories/${idOrHandle}/delete/`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error deleting category ${idOrHandle}:`, error);
+      throw error;
+    }
+  },
+
+  async deleteSubCategory(idOrHandle: string | number) {
+    try {
+      const response = await axiosInstance.delete(`/admin/subcategories/${idOrHandle}/delete/`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error deleting subcategory ${idOrHandle}:`, error);
       throw error;
     }
   },

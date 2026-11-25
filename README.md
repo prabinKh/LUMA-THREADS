@@ -1,168 +1,240 @@
-# LUMA-THREADS
+# 🧵 LUMA THREADS | Premium Apparel Storefront & Atelier Admin ERP
 
-A high-performance modern e-commerce platform and industry-level store management suite built with **Next.js 15 (React 19, Tailwind CSS)** and **Django 5.2 (REST Framework, SQLite)**.
+[![Next.js 15](https://img.shields.io/badge/Next.js-15.5-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![React 19](https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
+[![Django 5.2](https://img.shields.io/badge/Django-5.2-092E20?style=for-the-badge&logo=django)](https://www.djangoproject.com/)
+[![Django REST Framework](https://img.shields.io/badge/DRF-3.15-A30000?style=for-the-badge&logo=django)](https://www.django-rest-framework.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
----
-
-## 📸 Visual Showcase & Screen Previews
-
-### 🛍️ Customer Storefront Experience
-
-#### 1. Home Page & Editorial Showcase
-![Home Page](screenshots/01_storefront_home.png)
-
-#### 2. Collection & Denim Catalog
-![Collection Grid](screenshots/02_collection_all_denim.png)
-
-#### 3. Dynamic Colorways & Swatches (Aria Ribbed Cashmere Polo)
-*Each individual color swatch dynamically updates the product image, variant price, and available size options.*
-![Aria Polo Colorways](screenshots/03_product_detail_aria_polo.png)
-
-#### 4. Product Detail & Gallery (Devon Structured Boxy Denim Jacket)
-![Devon Denim Jacket](screenshots/04_product_detail_devon_jacket.png)
-
-#### 5. Shopping Bag & Cart View
-![Shopping Cart](screenshots/05_cart_view.png)
-
-#### 6. Multi-Channel Checkout (eSewa, Bank Transfer, COD)
-*Integrated with Nepal local payment gateways (eSewa Mobile Wallet, Direct Bank Transfer, and Cash on Delivery).*
-![Checkout Payment Methods](screenshots/06_checkout_payment_methods.png)
-
-#### 7. Customer Order Tracking Portal
-![Order Tracking](screenshots/07_order_tracking_portal.png)
+**Luma Threads** is an industry-grade, full-stack luxury apparel e-commerce ecosystem and atelier store management suite. Designed with utilitarian aesthetic sensibilities, it combines a modern Shopify-caliber customer storefront with a full enterprise admin portal featuring live POS billing, second-by-second user activity & card interaction tracking, dynamic CMS page builders, and multi-angle analytics reporting.
 
 ---
 
-### 🏢 Store Admin Management Suite (Dedicated Multi-Page Architecture)
+## 📑 Table of Contents
 
-Each management module is built as an **independent, dedicated HTML/CSS page** with its own distinct URL, navigation highlight, and view controllers:
-
-#### 8. Overview & Analytics (`/dashboard/` or `/dashboard/overview/`)
-*Real-time KPIs: Gross Revenue, Active Orders, Product Catalog count, Customer Base, and Payment Channel distribution.*
-![Admin Overview](screenshots/08_dashboard_overview.png)
-
-#### 9. Product & Inventory Catalog (`/dashboard/products/`)
-*Visual hex swatches, per-color pricing chips, size badges, search/filter controls, and edit/delete actions.*
-![Admin Products](screenshots/09_dashboard_products.png)
-
-#### 10. Add New Product (`/dashboard/products/add/`)
-*Dedicated full creation page with dynamic multi-colorway swatch builder, visual hex color picker, size runs, and category/subcategory filtering.*
-![Add Product Page](screenshots/10_dashboard_product_add.png)
-
-#### 11. Edit Product & Colorways (`/dashboard/products/<handle_or_id>/edit/`)
-*Dedicated full product editor for updating variant prices, primary images, descriptions, and hex swatches.*
-![Edit Product Page](screenshots/11_dashboard_product_edit.png)
-
-#### 12. Categories & Subcategories Tree Hierarchy (`/dashboard/categories/`)
-*Complete taxonomy management page with nested subcategories, product count indicators, and mandatory parent category selection.*
-![Admin Categories](screenshots/12_dashboard_categories.png)
-
-#### 13. Orders & Live Fulfillment Tracking (`/dashboard/orders/`)
-*Order status progression, carrier assignment (FedEx, DHL, Nepal Post, Aramex), tracking numbers, and quick dispatch.*
-![Admin Orders & Tracking](screenshots/13_dashboard_orders_tracking.png)
-
-#### 14. Itemized Tax Invoice & Dispatch Detail (`/dashboard/orders/<id>/`)
-*Dedicated printable tax invoice page with itemized customer breakdowns, shipping details, and live carrier tracking updates.*
-![Order Invoice Detail](screenshots/14_dashboard_order_invoice.png)
-
-#### 15. Cart Requests & Real-Time Abandoned Bag Monitoring (`/dashboard/cart-requests/`)
-*Asynchronous background sync capturing customer shopping bags, checkout drop-offs, and conversion lifecycle states.*
-![Admin Cart Requests](screenshots/15_dashboard_cart_requests.png)
-
-#### 16. Customer Directory & User Profiles (`/dashboard/customers/`)
-*Customer purchasing metrics, order counts, role assignments, and manual customer registration.*
-![Admin Customers](screenshots/16_dashboard_customers_list.png)
+- [Visual Showcase & Page Gallery](#-visual-showcase--page-gallery)
+  - [Customer Storefront Experience](#1-customer-storefront-experience)
+  - [Admin Enterprise Management Suite & POS](#2-admin-enterprise-management-suite--pos)
+- [Key Features & Capabilities](#-key-features--capabilities)
+- [Architecture & Tech Stack](#-architecture--tech-stack)
+- [Project Directory Structure](#-project-directory-structure)
+- [Getting Started & Local Setup](#-getting-started--local-setup)
+- [REST API Endpoints](#-rest-api-endpoints)
+- [License](#-license)
 
 ---
 
-## 🌟 Key Architecture & Capabilities
+## 📸 Visual Showcase & Page Gallery
 
-### 🛍️ Storefront Architecture (`/web`)
-- **Dynamic Swatch Engine:** Distinct price, sizes, and gallery images per color swatch.
-- **Deep-Linked Routing:** URL params support direct linking to specific colors (e.g. `/products/aria-ribbed-cashmere-polo?color=Dusty+Cedar`).
-- **Cart Sync:** Customer actions asynchronously register to the Django admin Cart Requests table.
-- **Payment Methods:** Support for **eSewa**, **Bank Transfer**, **Cash on Delivery (COD)**, and **Credit Cards**.
+### 1. Customer Storefront Experience
 
-### 🏢 Store Admin Suite (`/backend/dashboard/`)
-- **Multi-Page Architecture:** Each page is an individual HTML & CSS template with its own URL, eliminating single-page display issues.
-- **Dedicated Product Editor:** Full separate pages for adding (`/products/add/`) and editing (`/products/<id>/edit/`) products with multi-color swatches.
-- **Fulfillment & Tracking Engine:** Assign carrier partners (**FedEx**, **DHL**, **Nepal Post**, **Aramex**) and generate real-time tracking numbers (`TRK-...`).
-- **Printable Invoices:** Dedicated invoice view (`/orders/<id>/`) with formatted itemized billing and print layout (`window.print()`).
-- **Cart Monitoring:** Real-time visibility into active shopper bags, checkout drop-offs, and conversions.
+| Page View | Preview & Description |
+| :--- | :--- |
+| **01. Storefront Homepage** | Dynamic hero campaign banner, new arrival carousel, seasonal drops, curated categories, and artisan showcase.<br><br>![Storefront Home](docs/screenshots/01_storefront_home.png) |
+| **02. Dynamic Mega Menu & Navigation** | Real-time multi-column mega menu dynamically generated from backend database categories and collections.<br><br>![Storefront Megamenu](docs/screenshots/02_storefront_megamenu.png) |
+| **03. Catalog & Collection Grid** | Clean 4-column product grid with instant color swatch switching, quick sizing selector, and card hover effects.<br><br>![Collection Grid](docs/screenshots/03_storefront_collection.png) |
+| **04. Product Detail Page (PDP)** | Multi-angle zoom gallery, isolated colorway narratives, dependent size inventory, and seamless cart addition.<br><br>![Product Detail](docs/screenshots/04_storefront_product_detail.png) |
+| **05. Shopping Bag & Slide Cart** | Slide-out drawer with real-time subtotal, free shipping progress bar, promo code engine, and express checkout.<br><br>![Cart View](docs/screenshots/05_storefront_cart.png) |
+| **06. Multi-Channel Checkout** | Seamless checkout supporting Credit Card, eSewa, Direct Bank Wire, and Cash on Delivery with instant validation.<br><br>![Checkout](docs/screenshots/06_storefront_checkout.png) |
+| **07. Live Order Tracking** | Customer parcel tracking portal with milestone progression, courier status, and automated updates.<br><br>![Order Tracking](docs/screenshots/07_storefront_order_track.png) |
+| **08. Storefront Dynamic Footer** | Configurable newsletter signup, support hours, social links, multi-column site links, and payment badges.<br><br>![Storefront Footer](docs/screenshots/08_storefront_footer.png) |
 
 ---
 
-## 🚀 Getting Started
+### 2. Admin Enterprise Management Suite & POS
+
+| Admin Module | Preview & Description |
+| :--- | :--- |
+| **09. Executive Overview Dashboard** | Real-time revenue analytics, order status funnel, category sales velocity, and low-stock alerts.<br><br>![Admin Dashboard](docs/screenshots/09_admin_dashboard.png) |
+| **10. Product Catalog Management** | Complete catalog overview with live search, stock status badges, category filters, and quick actions.<br><br>![Products List](docs/screenshots/10_admin_products_list.png) |
+| **11. Advanced Atelier Product Studio** | Custom brand creation, merchandising badges, silhouette tags, colorway multi-image gallery & separate notes.<br><br>![Add Product Studio](docs/screenshots/11_admin_product_add.png) |
+| **12. Categories & Subcategories** | Apparel taxonomy manager with drag-and-drop ordering, category icons, and subcategory assignment.<br><br>![Categories](docs/screenshots/12_admin_categories.png) |
+| **13. Orders Lifecycle & Fulfillment** | Live order stream with status counters, tracking number management, customer records, and print invoices.<br><br>![Orders](docs/screenshots/13_admin_orders.png) |
+| **14. POS Terminal & Retail Billing** | Point-of-Sale with product barcode lookup, customer billing selection, discount codes, and thermal receipt print.<br><br>![POS Terminal](docs/screenshots/14_admin_pos.png) |
+| **15. Business Analytics & Reports** | 10 multi-angle business reports: sales by city, country, product, category, brand, stock, and top customers.<br><br>![Reports](docs/screenshots/15_admin_reports.png) |
+| **16. Homepage Hero Campaign CMS** | Live banner editor with campaign presets, desktop/mobile upload, CTA destinations, and real-time storefront sync.<br><br>![Hero CMS](docs/screenshots/16_admin_hero_settings.png) |
+| **17. Dynamic Footer CMS Builder** | Complete control over newsletter text, customer support hours, social media URLs, and 3 navigation columns.<br><br>![Footer CMS](docs/screenshots/17_admin_footer_settings.png) |
+| **18. User Activity & Card Seconds Tracker** | Second-by-second analytics: active seconds per page, card hover duration (⏱), swatch clicks, and user journeys.<br><br>![User Activity](docs/screenshots/18_admin_user_activity.png) |
+| **19. Customer Directory & CRM Profile** | Shopper profile directory, purchase volume history, total spend calculation, and direct customer outreach.<br><br>![Customers CRM](docs/screenshots/19_admin_customers.png) |
+
+---
+
+## ⚡ Key Features & Capabilities
+
+### 🛍️ Client Storefront
+- **Dynamic Denim Swatch Picker**: Instant client-side colorway swapping on product cards and PDP without page reload.
+- **Colorway-Dependent Pricing & Sizing**: Each individual colorway supports independent pricing, original compare-at prices, and isolated size matrices.
+- **Dynamic Megamenu**: Live categories, subcategories, and curated drops reflected directly in the header navigation.
+- **Cart & Slide Drawer**: Global state management with item counts, auto-applied promos, and persistent cart requests.
+- **Multi-Method Checkout**: Multi-step checkout supporting eSewa, Bank Transfer, Card, and Cash on Delivery.
+- **Customer Portal**: Sign in/sign out, profile management, and live order milestone tracking.
+
+### 💼 Admin ERP & Management Suite
+- **Atelier Product Creator**:
+  - **Brand CRUD**: Create and delete atelier brands with instant backend synchronization.
+  - **Merchandising Badges**: Dynamic uppercase badge creation with one-click chip deletion.
+  - **Gender / Silhouette Options**: Create and remove custom fit silhouettes (e.g. *Oversized Fit*, *Relaxed Silhouette*).
+  - **Colorway Multi-Picture Suite**: Bulk multi-file upload, comma/newline URL paste, swatch selector, and visual gallery.
+  - **Independent Colorway Descriptions**: Each colorway has its own isolated multi-note description editor.
+- **Point-of-Sale (POS) Retail Billing**: Fast cash register interface with customer selection, automated tax/subtotal calculation, and printable invoice generation.
+- **Second-by-Second Activity Tracking**: Tracks every single user (logged-in or guest), exact seconds spent on each page route, and exact seconds spent hovering/interacting with each product card.
+- **Dynamic Hero & Footer CMS**: Customize storefront campaign headlines, mobile/desktop imagery, support hours, and navigation links with instant live reflection.
+- **Comprehensive Reports Engine**: 10 distinct analytical reports covering sales by geographic region, top products, inventory depletion, and customer loyalty.
+
+---
+
+## 🏗️ Architecture & Tech Stack
+
+```mermaid
+graph TD
+    Client["🌐 Next.js 15 Storefront & Admin SPA"] -->|REST API / JSON| Django["⚙️ Django 5.2 REST Framework"]
+    Client -->|Local Caching & Events| Storage["💾 LocalStorage & CustomEvents"]
+    Django -->|ORM Queries| DB[("🗄️ SQLite / PostgreSQL Database")]
+    Django -->|File Storage| Media["📁 Media Assets & JSON Data"]
+    
+    subgraph Frontend Architecture
+        NextApp["Next.js App Router (app/)"]
+        AdminSPA["Admin SPA (web/admin/)"]
+        Components["Modular UI Components"]
+        API_Services["Axios Client API Services"]
+    end
+    
+    subgraph Backend Architecture
+        DashboardViews["Dashboard & Analytics APIs"]
+        StoreViews["Store Catalog & Orders APIs"]
+        AuthViews["JWT & Session Auth"]
+        Models["Relational Models & Migrations"]
+    end
+```
+
+### Core Technologies:
+- **Frontend**: Next.js 15.5, React 19, TypeScript, Tailwind CSS, Recharts, GSAP, Lucide Icons, Sonner Toasts.
+- **Backend**: Python 3.12, Django 5.2, Django REST Framework (DRF), Django CORS Headers.
+- **Database**: SQLite (Development) / PostgreSQL (Production ready).
+- **Testing & Verification**: Playwright Chromium automation test suite.
+
+---
+
+## 📁 Project Directory Structure
+
+```text
+LUMA-THREADS/
+├── backend/                       # Django REST Backend
+│   ├── accounts/                  # User authentication & customer profiles
+│   ├── data/                      # Persistent JSON storage (Hero, Footer, Activity)
+│   ├── lumathreads/               # Project settings & root URL routing
+│   ├── orders/                    # Orders, cart requests & payment logic
+│   ├── products/                  # Catalog, categories, dashboard views & reports
+│   └── manage.py                  # Django management CLI
+├── web/                           # Next.js 15 Frontend
+│   ├── admin/                     # Admin ERP Portal & Management SPA
+│   │   ├── AddProduct.tsx         # Atelier Product Creator Studio
+│   │   ├── FooterSettings.tsx     # Dynamic Storefront Footer CMS
+│   │   ├── HeroSettings.tsx       # Homepage Hero Campaign CMS
+│   │   ├── POS.tsx                # Point-of-Sale Terminal & Invoicing
+│   │   ├── UserActivity.tsx       # Second-by-Second Activity Analytics
+│   │   └── reports/               # 10 Dedicated Business Analytical Reports
+│   ├── api/                       # Typed Axios API Client Services
+│   ├── app/                       # Next.js App Router Pages & API Routes
+│   ├── components/                # Reusable UI & Storefront Components
+│   └── lib/                       # Catalog utilities, types, and helpers
+├── docs/                          # Project Documentation
+│   └── screenshots/               # High-resolution screenshots of all 19 pages
+└── README.md                      # Primary Project Documentation
+```
+
+---
+
+## 🚀 Getting Started & Local Setup
 
 ### 1. Prerequisites
-- **Python 3.10+**
-- **Node.js 18+** & **npm**
+- **Node.js**: v18.17+ or v20+
+- **Python**: v3.10+ (v3.12 recommended)
+- **Git**
 
 ---
 
-### 2. Django Backend Setup
+### 2. Backend Setup (Django)
 
-```bash
-cd backend
+1. Navigate to the backend directory:
+   ```bash
+   cd LUMA-THREADS/backend
+   ```
 
-# Install dependencies
-pip install -r requirements.txt
+2. Create and activate a Python virtual environment:
+   ```bash
+   # Windows:
+   python -m venv venv
+   .\venv\Scripts\activate
 
-# Run migrations
-python manage.py migrate
+   # macOS / Linux:
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
 
-# Seed catalog and dashboard demo records
-python manage.py seed_catalog
-python seed_admin_data.py
+3. Install required Python packages:
+   ```bash
+   pip install django djangorestframework django-cors-headers pillow
+   ```
 
-# Launch Django server (Port 8000)
-python manage.py runserver 8000
-```
+4. Apply database migrations:
+   ```bash
+   python manage.py migrate
+   ```
 
-- **Dashboard:** [http://127.0.0.1:8000/dashboard/](http://127.0.0.1:8000/dashboard/)
-- **Django Admin:** [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/)
-  - **Email:** `admin@lumathreads.com`
-  - **Password:** `adminpassword123`
-
----
-
-### 3. Next.js Frontend Setup
-
-```bash
-cd web
-
-# Install dependencies
-npm install
-
-# Launch Next.js dev server (Port 3000)
-npm run dev
-```
-
-- **Storefront:** [http://localhost:3000](http://localhost:3000)
+5. Start the Django development server:
+   ```bash
+   python manage.py runserver 127.0.0.1:8000
+   ```
+   *The backend REST API will be accessible at `http://127.0.0.1:8000/api/`.*
 
 ---
 
-## 📁 Repository Structure
+### 3. Frontend Setup (Next.js)
 
-```
-├── backend/
-│   ├── accounts/             # Authentication & user directory
-│   ├── lumathreads/          # Core Django project configuration & URLs
-│   ├── orders/               # Orders, tracking, and CartRequest models
-│   ├── products/             # Product models, APIs, and dashboard views
-│   ├── static/css/           # Admin dashboard stylesheet (dashboard.css)
-│   ├── templates/            # Admin dashboard templates (dashboard.html)
-│   └── manage.py
-├── web/
-│   ├── app/                  # Next.js App Router (pages, layout, checkout)
-│   ├── components/           # UI components (Header, ProductCard, CartDrawer)
-│   ├── lib/                  # Catalog data, types, and API connectors
-│   └── package.json
-├── screenshots/              # High-resolution screenshots of all pages & modals
-└── README.md
-```
+1. Navigate to the frontend directory:
+   ```bash
+   cd LUMA-THREADS/web
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Configure environment variables (create `.env.local` if needed):
+   ```env
+   NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api
+   NEXT_PUBLIC_DJANGO_API_URL=http://127.0.0.1:8000/api
+   ```
+
+4. Start the Next.js development server:
+   ```bash
+   npm run dev
+   ```
+   *The storefront will be live at `http://localhost:3000/` and the admin portal at `http://localhost:3000/admin`.*
+
+---
+
+## 🔌 REST API Endpoints
+
+| Endpoint Route | Method | Description |
+| :--- | :---: | :--- |
+| `/api/store/products/` | `GET` | List all active catalog products |
+| `/api/store/categories/` | `GET` | Retrieve category tree with subcategories |
+| `/api/store/collections/` | `GET` | Retrieve curated drop collections |
+| `/api/admin/hero-settings/` | `GET`, `POST` | Retrieve and update homepage hero campaign settings |
+| `/api/admin/footer-settings/` | `GET`, `POST` | Retrieve and update storefront footer settings |
+| `/api/admin/activity/` | `GET`, `POST` | Ingest and query second-by-second user and card tracking logs |
+| `/api/admin/brands/` | `GET`, `POST` | List and create atelier brands |
+| `/api/admin/brands/<slug>/` | `DELETE` | Delete atelier brand |
+| `/api/admin/orders/` | `GET`, `POST` | List orders and create POS billing transactions |
+| `/api/admin/reports/` | `GET` | Fetch multi-angle analytics (sales by city, country, etc.) |
 
 ---
 
 ## 📄 License
-MIT License.
+
+This project is licensed under the **MIT License**. Feel free to use, modify, and distribute for personal and commercial projects.

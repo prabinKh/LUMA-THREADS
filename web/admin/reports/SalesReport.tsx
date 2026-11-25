@@ -34,7 +34,7 @@ const SalesReport = () => {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("all");
-  const [orderStatus, setOrderStatus] = useState("process_conform");
+  const [orderStatus, setOrderStatus] = useState("all");
 
   useGSAPReveal(containerRef, ".gsap-reveal", { opacity: 0, y: 20, duration: 0.6, stagger: 0.05 });
 
@@ -43,8 +43,8 @@ const SalesReport = () => {
       try {
         const ordersData = await orderService.getAll();
         setOrders(ordersData);
-        // Apply initial filter for process_conform
-        setFilteredOrders(ordersData.filter(o => o.status === "process_conform"));
+        // Show all active orders by default
+        setFilteredOrders(ordersData);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching orders:", error);
@@ -72,6 +72,12 @@ const SalesReport = () => {
         return d && d <= new Date(dateTo);
       });
     }
+    if (paymentStatus !== "all") {
+      filtered = filtered.filter(o => 
+        (paymentStatus === "paid" && (o.paymentStatus === "paid" || o.status === "delivered")) ||
+        (paymentStatus === "unpaid" && (o.paymentStatus === "unpaid" && o.status !== "delivered"))
+      );
+    }
     if (orderStatus !== "all") {
       filtered = filtered.filter(o => o.status === orderStatus);
     }
@@ -81,11 +87,11 @@ const SalesReport = () => {
   };
 
   const totalAmount = sumAmounts(filteredOrders, 'totalAmount');
-  const totalItems = filteredOrders.reduce((acc, o) => acc + (o.items?.length || 0), 0);
-  const totalDiscount = 0; // Mock
-  const totalTax = totalAmount * 0.18; // Mock 18% GST
-  const totalShipping = filteredOrders.length * 50; // Mock 50 per order
-  const netAmount = totalAmount + totalTax + totalShipping - totalDiscount;
+  const totalItems = filteredOrders.reduce((acc, o) => acc + (o.items?.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0) || 0), 0);
+  const totalDiscount = filteredOrders.reduce((acc, o) => acc + (Number(o.discount) || 0), 0);
+  const totalTax = totalAmount * 0.10; // 10% Tax
+  const totalShipping = filteredOrders.reduce((acc, o) => acc + (Number(o.shippingFee) || 0), 0);
+  const netAmount = totalAmount;
 
   if (loading) {
     return (
@@ -101,7 +107,7 @@ const SalesReport = () => {
   return (
     <div className="flex-1 min-h-screen overflow-y-auto no-scrollbar pb-20 lg:pb-0" ref={containerRef}>
 
-        <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-8">
+        <div className="p-4 lg:p-8 w-full space-y-8">
           {/* Filters */}
           <div className="bg-card border border-border rounded-3xl p-6 shadow-sm gsap-reveal">
             <div className="flex items-center gap-2 mb-6">

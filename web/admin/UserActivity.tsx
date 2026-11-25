@@ -1,67 +1,51 @@
-import { useState, useEffect, useRef, useMemo } from "react";
-import { Link, useNavigate, useOutletContext } from "react-router-dom";
-import { userActivityService } from "@/api/userActivityService";
-import { 
-  Activity, 
-  User, 
-  Clock, 
-  Eye, 
-  ShoppingCart, 
-  Search, 
-  Home, 
-  Package, 
+import { useState, useRef, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { userActivityService, type UserActivityLog } from "@/api/userActivityService";
+import {
+  Activity,
+  User,
+  Clock,
+  Eye,
+  ShoppingCart,
+  Search,
+  Home,
+  Package,
   Filter,
   ChevronRight,
   ChevronDown,
-  Calendar,
-  Menu,
-  X,
   TrendingUp,
   PieChart as PieChartIcon,
   Users as UsersIcon,
   ArrowRight,
-  Maximize2,
-  Minimize2,
   ExternalLink,
-  Tag,
-  Layers
+  Layers,
+  Sparkles,
+  MousePointerClick,
+  Palette,
+  RefreshCw,
+  Trash2,
+  SlidersHorizontal,
 } from "lucide-react";
 import { safeToDate, formatPrice } from "@/lib/utils";
-import { format, startOfDay, subDays, isSameDay } from "date-fns";
+import { format, subDays, isSameDay } from "date-fns";
 import { motion, AnimatePresence } from "motion/react";
-import { useGSAPReveal } from "@/hooks/useGSAP";
-import { useQuery } from "@tanstack/react-query";
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  PieChart, 
-  Pie, 
-  Cell,
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
   AreaChart,
-  Area
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
 } from "recharts";
 import { useProducts } from "@/hooks/useProducts";
-import { type Product } from "@/lib/types";
-
-interface UserActivityLog {
-  id: string;
-  uid: string;
-  email: string;
-  displayName: string;
-  pageType: string;
-  path: string;
-  metadata: Record<string, string | undefined>;
-  timestamp: string;
-  duration: number;
-  userAgent: string;
-  screenResolution: string;
-  ipAddress?: string;
-}
+import { toast } from "sonner";
 
 interface UserSummary {
   uid: string;
@@ -69,758 +53,899 @@ interface UserSummary {
   displayName: string;
   lastActive: Date;
   totalActivities: number;
-  totalTime: number;
+  totalTime: number; // in seconds
+  cardHoverTime: number; // in seconds
 }
 
-const COLORS = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ef4444", "#6366f1"];
+interface CardStat {
+  handle: string;
+  title: string;
+  image?: string;
+  price?: number | string;
+  totalSeconds: number;
+  hoverCount: number;
+  clickCount: number;
+  swatchCount: number;
+  quickAddCount: number;
+  uniqueUsers: Set<string>;
+}
 
-const UserActivity = () => {
-  const { setIsSidebarOpen } = useOutletContext<{ setIsSidebarOpen: (open: boolean) => void }>();
-  const containerRef = useRef<HTMLDivElement>(null);
+interface PageStat {
+  path: string;
+  pageType: string;
+  totalSeconds: number;
+  visits: number;
+  uniqueUsers: Set<string>;
+}
+
+const COLORS = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#ef4444", "#06b6d4"];
+
+export const UserActivity = () => {
   const navigate = useNavigate();
-  const { data: rawData = [], isLoading: loading } = useQuery({
-    queryKey: ['user_activities'],
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<"feed" | "cards" | "pages" | "users">("cards");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [actionFilter, setActionFilter] = useState<string>("all");
+  const [selectedUserUid, setSelectedUserUid] = useState<string | null>(null);
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState<Record<string, boolean>>({});
+
+  const { data: rawActivities = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ["user_activities"],
     queryFn: () => userActivityService.getAll(),
-    refetchInterval: 3000,
+    refetchInterval: 2500, // Live poll every 2.5 seconds
   });
 
-  const activities = useMemo(() => {
-    if (Array.isArray(rawData)) return rawData;
-    if (rawData && typeof rawData === 'object' && 'results' in rawData && Array.isArray((rawData as { results: UserActivityLog[] }).results)) {
-      return (rawData as { results: UserActivityLog[] }).results;
-    }
+  const activities: UserActivityLog[] = useMemo(() => {
+    if (Array.isArray(rawActivities)) return rawActivities;
     return [];
-  }, [rawData]);
+  }, [rawActivities]);
 
-  const [selectedUserUid, setSelectedUserUid] = useState<string | null>(null);
-  const [isFullPage, setIsFullPage] = useState(false);
-  const [expandedActivityId, setExpandedActivityId] = useState<string | null>(null);
-  const [showTechnicalDetails, setShowTechnicalDetails] = useState<Record<string, boolean>>({});
-  const [isAllDetailsExpanded, setIsAllDetailsExpanded] = useState(false);
   const { products: allProducts } = useProducts();
 
   const toggleTechnicalDetails = (id: string) => {
-    setShowTechnicalDetails(prev => ({
+    setShowTechnicalDetails((prev) => ({
       ...prev,
-      [id]: !prev[id]
+      [id]: !prev[id],
     }));
   };
 
-  const toggleAllDetails = () => {
-    const newState = !isAllDetailsExpanded;
-    setIsAllDetailsExpanded(newState);
-    if (newState) {
-      const allIds = selectedUserActivities.reduce((acc, a) => {
-        acc[a.id] = true;
-        return acc;
-      }, {} as Record<string, boolean>);
-      setShowTechnicalDetails(allIds);
-    } else {
-      setShowTechnicalDetails({});
-    }
-  };
-
-  useGSAPReveal(containerRef, ".gsap-reveal", { opacity: 0, y: 20, duration: 0.6, stagger: 0.05 });
-
-  // Process data for unique users
+  // Summaries by User
   const userSummaries = useMemo(() => {
     const summaries: Record<string, UserSummary> = {};
-    
-    activities.forEach(activity => {
-      if (!summaries[activity.uid]) {
-        summaries[activity.uid] = {
-          uid: activity.uid,
-          email: activity.email,
-          displayName: activity.displayName,
-          lastActive: safeToDate(activity.timestamp) || new Date(),
+
+    activities.forEach((act) => {
+      if (!summaries[act.uid]) {
+        summaries[act.uid] = {
+          uid: act.uid,
+          email: act.email,
+          displayName: act.displayName || act.email.split("@")[0],
+          lastActive: safeToDate(act.timestamp) || new Date(),
           totalActivities: 0,
-          totalTime: 0
+          totalTime: 0,
+          cardHoverTime: 0,
         };
       }
-      
-      summaries[activity.uid].totalActivities += 1;
-      summaries[activity.uid].totalTime += activity.duration;
-      
-      const activityDate = safeToDate(activity.timestamp);
-      if (activityDate && activityDate > summaries[activity.uid].lastActive) {
-        summaries[activity.uid].lastActive = activityDate;
+
+      summaries[act.uid].totalActivities += 1;
+      summaries[act.uid].totalTime += Number(act.duration || 0);
+
+      if (act.action === "card_hover" || act.metadata?.hoverSeconds) {
+        summaries[act.uid].cardHoverTime += Number(act.metadata?.hoverSeconds || act.duration || 0);
+      }
+
+      const actDate = safeToDate(act.timestamp);
+      if (actDate && actDate > summaries[act.uid].lastActive) {
+        summaries[act.uid].lastActive = actDate;
       }
     });
-    
+
     return Object.values(summaries).sort((a, b) => b.lastActive.getTime() - a.lastActive.getTime());
   }, [activities]);
 
-  // Process data for charts
-  const chartData = useMemo(() => {
-    // Activity over last 7 days
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const date = subDays(new Date(), i);
-      return {
-        date: format(date, "MMM dd"),
-        count: 0,
-        fullDate: date
-      };
-    }).reverse();
+  // Aggregated Card Engagement Stats (Every second spent on particular card!)
+  const cardStats = useMemo(() => {
+    const map: Record<string, CardStat> = {};
 
-    activities.forEach(activity => {
-      const activityDate = safeToDate(activity.timestamp);
-      if (activityDate) {
-        const dayData = last7Days.find(d => isSameDay(d.fullDate, activityDate));
-        if (dayData) dayData.count += 1;
+    activities.forEach((act) => {
+      const handle =
+        act.metadata?.productHandle ||
+        (act.path.startsWith("/products/") ? act.path.replace("/products/", "").split("?")[0] : null);
+
+      if (!handle) return;
+
+      const title =
+        act.metadata?.productTitle ||
+        handle
+          .split("-")
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+
+      if (!map[handle]) {
+        const foundProd = allProducts.find((p) => p.handle === handle || p.slug === handle);
+        map[handle] = {
+          handle,
+          title,
+          image: (act.metadata?.productImage as string) || foundProd?.image || foundProd?.images?.[0],
+          price: (act.metadata?.productPrice as string | number) || foundProd?.price,
+          totalSeconds: 0,
+          hoverCount: 0,
+          clickCount: 0,
+          swatchCount: 0,
+          quickAddCount: 0,
+          uniqueUsers: new Set(),
+        };
+      }
+
+      map[handle].uniqueUsers.add(act.uid);
+
+      if (act.action === "card_hover" || act.metadata?.hoverSeconds) {
+        const secs = Number(act.metadata?.hoverSeconds || act.duration || 0);
+        map[handle].totalSeconds += secs;
+        map[handle].hoverCount += 1;
+      } else if (act.action === "card_click" || act.pageType === "product_view") {
+        map[handle].clickCount += 1;
+      } else if (act.action === "card_swatch_select") {
+        map[handle].swatchCount += 1;
+      } else if (act.action === "card_quick_add" || act.action === "add_to_cart") {
+        map[handle].quickAddCount += 1;
       }
     });
 
-    // Page type distribution
-    const pageTypes: Record<string, number> = {};
-    activities.forEach(activity => {
-      pageTypes[activity.pageType] = (pageTypes[activity.pageType] || 0) + 1;
+    return Object.values(map).sort((a, b) => b.totalSeconds - a.totalSeconds);
+  }, [activities, allProducts]);
+
+  // Aggregated Page Stats (Every second spent on particular page!)
+  const pageStats = useMemo(() => {
+    const map: Record<string, PageStat> = {};
+
+    activities.forEach((act) => {
+      const path = act.path || "/";
+      if (!map[path]) {
+        map[path] = {
+          path,
+          pageType: act.pageType || "page",
+          totalSeconds: 0,
+          visits: 0,
+          uniqueUsers: new Set(),
+        };
+      }
+
+      map[path].uniqueUsers.add(act.uid);
+      if (act.action === "page_view") {
+        map[path].visits += 1;
+      }
+      if (act.action === "page_duration" || act.duration > 0) {
+        map[path].totalSeconds += Number(act.duration || 0);
+      }
     });
 
-    const pieData = Object.entries(pageTypes).map(([name, value]) => ({ name, value }));
-
-    return { last7Days, pieData };
+    return Object.values(map).sort((a, b) => b.totalSeconds - a.totalSeconds);
   }, [activities]);
 
-  const selectedUserActivities = useMemo(() => {
-    if (!selectedUserUid) return [];
-    return activities.filter(a => a.uid === selectedUserUid);
-  }, [activities, selectedUserUid]);
+  // Overall KPI Metrics
+  const totalSecondsAll = useMemo(() => {
+    return activities.reduce((acc, a) => acc + Number(a.duration || 0), 0);
+  }, [activities]);
 
-  const selectedUser = useMemo(() => {
-    if (!selectedUserUid) return null;
-    return userSummaries.find(u => u.uid === selectedUserUid);
-  }, [userSummaries, selectedUserUid]);
+  const totalCardHoverSeconds = useMemo(() => {
+    return cardStats.reduce((acc, c) => acc + c.totalSeconds, 0);
+  }, [cardStats]);
 
-  const getIcon = (type: string) => {
-    switch (type) {
-      case "product_view":
-      case "view_product": return <Package size={16} className="text-blue-600" />;
-      case "category_view":
-      case "view_category": return <Filter size={16} className="text-purple-600" />;
-      case "checkout":
-      case "view_checkout": return <ShoppingCart size={16} className="text-emerald-600" />;
-      case "search": return <Search size={16} className="text-amber-600" />;
-      case "home": return <Home size={16} className="text-indigo-600" />;
-      case "compare":
-      case "view_compare": return <Layers size={16} className="text-cyan-600" />;
-      case "wishlist":
-      case "view_wishlist": return <ShoppingCart size={16} className="text-pink-600" />;
-      case "click_product_card": return <Eye size={16} className="text-blue-400" />;
-      case "add_to_cart": return <ShoppingCart size={16} className="text-orange-600" />;
-      default: return <Activity size={16} className="text-muted-foreground" />;
+  // Filtered Activities for feed
+  const filteredActivities = useMemo(() => {
+    let result = activities;
+
+    if (selectedUserUid) {
+      result = result.filter((a) => a.uid === selectedUserUid);
+    }
+
+    if (actionFilter !== "all") {
+      result = result.filter((a) => a.action === actionFilter);
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (a) =>
+          a.displayName.toLowerCase().includes(q) ||
+          a.email.toLowerCase().includes(q) ||
+          a.path.toLowerCase().includes(q) ||
+          (a.metadata?.productTitle as string)?.toLowerCase().includes(q) ||
+          (a.metadata?.productHandle as string)?.toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [activities, selectedUserUid, actionFilter, searchQuery]);
+
+  const formatSeconds = (sec: number) => {
+    if (!sec || sec < 0) return "0s";
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  };
+
+  const getActionBadge = (act: UserActivityLog) => {
+    switch (act.action) {
+      case "card_hover":
+        return {
+          label: "Card Hover",
+          color: "bg-blue-500/10 text-blue-600 border-blue-500/30",
+          icon: Clock,
+        };
+      case "card_click":
+        return {
+          label: "Card Click",
+          color: "bg-indigo-500/10 text-indigo-600 border-indigo-500/30",
+          icon: MousePointerClick,
+        };
+      case "card_swatch_select":
+        return {
+          label: "Color Swatch Switch",
+          color: "bg-purple-500/10 text-purple-600 border-purple-500/30",
+          icon: Palette,
+        };
+      case "card_quick_add":
+        return {
+          label: "Card Quick Add",
+          color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
+          icon: ShoppingCart,
+        };
+      case "page_duration":
+        return {
+          label: "Time on Page",
+          color: "bg-amber-500/10 text-amber-600 border-amber-500/30",
+          icon: Clock,
+        };
+      case "page_view":
+        return {
+          label: "Page View",
+          color: "bg-neutral-500/10 text-neutral-600 border-neutral-500/30",
+          icon: Eye,
+        };
+      default:
+        return {
+          label: act.action.replace(/_/g, " "),
+          color: "bg-muted text-muted-foreground",
+          icon: Activity,
+        };
     }
   };
-
-  const getPageLabel = (activity: UserActivityLog) => {
-    if (!activity.pageType) return "System Event";
-    if (activity.pageType === "view_product" || activity.pageType === "product_view") {
-      const product = allProducts.find(p => p.slug === activity.metadata?.productSlug || p.id === activity.metadata?.productSlug);
-      return product ? `Viewed: ${product.name}` : (activity.metadata?.productName || `Product: ${activity.metadata?.productSlug || "Unknown"}`);
-    }
-    if (activity.pageType === "view_category" || activity.pageType === "category_view") return `Browsed Category: ${activity.metadata?.categorySlug || "Unknown"}`;
-    if (activity.pageType === "search") return `Searched for: "${activity.metadata?.query || "..."}"`;
-    if (activity.pageType === "click_product_card") return `Clicked Property: ${activity.metadata?.productName || "Product Card"}`;
-    if (activity.pageType === "add_to_cart") return `Cart: Added ${activity.metadata?.productName || "Product"}`;
-    
-    return activity.pageType.charAt(0).toUpperCase() + activity.pageType.slice(1).replace(/_/g, " ");
-  };
-
-  const handleToggleProductDetails = (activityId: string) => {
-    setExpandedActivityId(prev => prev === activityId ? null : activityId);
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-muted flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-medium animate-pulse text-muted-foreground">Analyzing behavior patterns...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="flex-1 min-h-screen overflow-y-auto no-scrollbar pb-20 lg:pb-0" ref={containerRef}>
-        <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
-          {/* Dashboard Overview - Hide in Full Page Mode */}
-          {!isFullPage && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 gsap-reveal">
-              <div className="lg:col-span-2 bg-card border border-border rounded-3xl p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                    <TrendingUp size={16} className="text-blue-600" />
-                    Activity Over Time (Last 7 Days)
-                  </h3>
-                </div>
-                <div className="h-[200px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData.last7Days}>
-                      <defs>
-                        <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: "#9ca3af"}} />
-                      <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: "#9ca3af"}} />
-                      <Tooltip 
-                        contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }}
-                      />
-                      <Area type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorCount)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
+    <div className="w-full space-y-8 p-4 sm:p-6 lg:p-8 xl:p-10 min-h-screen max-w-[1600px] mx-auto">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-border">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-600 border border-blue-500/20">
+              Live Real-Time Tracking
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+              User Activity & Second-by-Second Engagement
+            </h1>
+          </div>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+            Tracking every single user session, every second spent on particular store pages, and every second spent hovering and clicking product cards.
+          </p>
+        </div>
 
-              <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                    <PieChartIcon size={16} className="text-purple-600" />
-                    Page Distribution
-                  </h3>
-                </div>
-                <div className="h-[200px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={chartData.pieData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {chartData.pieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  {chartData.pieData.slice(0, 4).map((entry, index) => (
-                    <div key={entry.name} className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                      <span className="text-[10px] text-muted-foreground truncate">{entry.name.replace("_", " ")}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="px-3.5 py-2 text-xs font-bold rounded-xl border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+            <span>Refresh</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={async () => {
+              if (window.confirm("Clear client-side cached activity logs?")) {
+                await userActivityService.clear();
+                queryClient.invalidateQueries({ queryKey: ["user_activities"] });
+                toast.success("Activity cache cleared.");
+              }
+            }}
+            className="px-3.5 py-2 text-xs font-bold rounded-xl border border-border bg-background hover:bg-rose-50 text-muted-foreground hover:text-rose-600 flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Trash2 size={13} />
+            <span>Clear Logs</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Top Level Metric KPIs */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* KPI 1: Total Users Tracked */}
+        <div className="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-xs">
+          <div className="flex items-center gap-2.5 text-muted-foreground mb-2">
+            <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center font-bold">
+              <UsersIcon size={16} />
             </div>
-          )}
+            <span className="text-[11px] font-bold uppercase tracking-wider">Tracked Users</span>
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-foreground">{userSummaries.length}</div>
+          <div className="text-[11px] text-muted-foreground mt-1">
+            {userSummaries.filter((u) => u.uid.startsWith("guest")).length} Guests •{" "}
+            {userSummaries.filter((u) => !u.uid.startsWith("guest")).length} Authenticated
+          </div>
+        </div>
 
-          <div className={`grid grid-cols-1 ${isFullPage ? 'lg:grid-cols-1' : 'lg:grid-cols-12'} gap-8`}>
-            {/* User List Sidebar - Hide in Full Page Mode */}
-            {!isFullPage && (
-              <div className="lg:col-span-4 space-y-4 gsap-reveal">
-                <div className="flex items-center justify-between mb-2 px-2">
-                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                    <UsersIcon size={16} className="text-muted-foreground" />
-                    Active Users ({userSummaries.length})
-                  </h3>
-                </div>
-                
-                <div className="space-y-2 max-h-[600px] overflow-auto pr-2 custom-scrollbar">
-                  {userSummaries.map((user) => (
-                    <button
-                      key={user.uid}
-                      onClick={() => setSelectedUserUid(user.uid)}
-                      className={`w-full text-left p-4 rounded-2xl border transition-all ${
-                        selectedUserUid === user.uid 
-                          ? "bg-blue-50 border-blue-200 shadow-sm" 
-                          : "bg-card border-border hover:border-border"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
-                          selectedUserUid === user.uid ? "bg-blue-600 text-white" : "bg-accent text-muted-foreground"
-                        }`}>
-                          {user.displayName ? user.displayName.charAt(0).toUpperCase() : '?'}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="font-bold text-sm text-foreground truncate">{user.displayName || "Unknown User"}</div>
-                          <div className="text-[10px] text-muted-foreground truncate">{user.email}</div>
-                        </div>
-                        {selectedUserUid === user.uid && (
-                          <div className="flex items-center gap-2">
-                             <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/admin/activity/user/${user.uid}`);
-                              }}
-                              className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                              title="Full Journey Report"
-                            >
-                              <Activity size={14} />
-                            </button>
-                            <ArrowRight size={14} className="text-blue-600" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="mt-3 flex items-center justify-between text-[10px]">
-                        <span className="text-muted-foreground">Last active {format(user.lastActive, "HH:mm")}</span>
-                        <span className={`font-bold ${selectedUserUid === user.uid ? "text-blue-600" : "text-muted-foreground"}`}>
-                          {user.totalActivities} events
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Detailed Activity View */}
-            <div className={`${isFullPage ? 'lg:col-span-1' : 'lg:col-span-8'} gsap-reveal`}>
-              <AnimatePresence mode="wait">
-                {selectedUser ? (
-                  <motion.div
-                    key={selectedUser.uid}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="space-y-6"
-                  >
-                    {/* User Header */}
-                    <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                          <div className={`w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-xl font-bold border-4 border-blue-100`}>
-                            {selectedUser.displayName ? selectedUser.displayName.charAt(0).toUpperCase() : '?'}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h2 className="text-xl font-bold text-foreground">{selectedUser.displayName || "Unknown User"}</h2>
-                              <span className="px-2 py-0.5 bg-blue-100 text-blue-600 text-[10px] font-bold rounded-full uppercase">User Summary</span>
-                            </div>
-                            <p className="text-sm text-muted-foreground">{selectedUser.email}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-muted px-4 py-2 rounded-xl text-center">
-                              <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Session Time</div>
-                              <div className="text-sm font-black text-foreground">{Math.round(selectedUser.totalTime / 60)}m {selectedUser.totalTime % 60}s</div>
-                            </div>
-                            <div className="bg-muted px-4 py-2 rounded-xl text-center">
-                              <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Total Actions</div>
-                              <div className="text-sm font-black text-foreground">{selectedUser.totalActivities}</div>
-                            </div>
-                          </div>
-                          <button 
-                            onClick={() => navigate(`/admin/activity/user/${selectedUser.uid}`)}
-                            className="p-3 bg-blue-600 hover:bg-blue-700 rounded-2xl text-white transition-all hover:scale-110 active:scale-95 shadow-lg shadow-blue-600/20"
-                            title="View Extended History"
-                          >
-                            <ExternalLink size={20} />
-                          </button>
-                          <button 
-                            onClick={() => setIsFullPage(!isFullPage)}
-                            className="p-3 bg-accent hover:bg-accent/50 rounded-2xl text-muted-foreground transition-all hover:scale-110 active:scale-95 shadow-sm"
-                            title={isFullPage ? "Exit Full Page" : "Full Page View"}
-                          >
-                            {isFullPage ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* User Tracking Report Summary */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 gsap-reveal">
-                      <div className="bg-card border border-border rounded-3xl p-5 shadow-sm group hover:border-blue-200 transition-all">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-                            <Calendar size={18} />
-                          </div>
-                          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">First Visit</div>
-                        </div>
-                        <div className="text-base font-black text-foreground">
-                          {selectedUserActivities.length > 0 
-                            ? format(safeToDate(selectedUserActivities[selectedUserActivities.length - 1].timestamp) || new Date(), "MMM dd, yyyy")
-                            : "N/A"}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground mt-1">Found via site search/direct</div>
-                      </div>
-
-                      <div className="bg-card border border-border rounded-3xl p-5 shadow-sm group hover:border-purple-200 transition-all">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
-                            <Activity size={18} />
-                          </div>
-                          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">Intensity</div>
-                        </div>
-                        <div className="text-base font-black text-foreground">
-                          {(() => {
-                            const frequency = selectedUser.totalActivities / (Math.max(1, Math.round(selectedUser.totalTime / 60)));
-                            if (frequency > 5) return "Extremely High";
-                            if (frequency > 2) return "Active User";
-                            return "Casual Browser";
-                          })()}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground mt-1">Actions per minute</div>
-                      </div>
-
-                      <div className="bg-card border border-border rounded-3xl p-5 shadow-sm group hover:border-indigo-200 transition-all">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                            <Filter size={18} />
-                          </div>
-                          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">Top Interest</div>
-                        </div>
-                        <div className="text-base font-black text-foreground truncate">
-                          {(() => {
-                            const cats: Record<string, number> = {};
-                            selectedUserActivities.forEach(a => {
-                              if (a.pageType.includes("category")) {
-                                const c = a.metadata?.categorySlug || "General";
-                                cats[c] = (cats[c] || 0) + 1;
-                              }
-                            });
-                            const top = Object.entries(cats).sort((a, b) => b[1] - a[1])[0];
-                            return top ? top[0].charAt(0).toUpperCase() + top[0].slice(1) : "None Browsed";
-                          })()}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground mt-1">Based on category views</div>
-                      </div>
-
-                      <div className="bg-card border border-border rounded-3xl p-5 shadow-sm group hover:border-emerald-200 transition-all">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                            <ShoppingCart size={18} />
-                          </div>
-                          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">Purchase Intent</div>
-                        </div>
-                        <div className="text-base font-black text-emerald-600">
-                          {selectedUserActivities.some(a => a.pageType.includes("checkout")) ? "Very High" : 
-                           selectedUserActivities.some(a => a.pageType.includes("cart")) ? "Moderate" : "Awareness"}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground mt-1">Funnel progression status</div>
-                      </div>
-                    </div>
-
-                    {/* Timeline */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between px-2">
-                        <div className="flex items-center gap-4">
-                          <h3 className="text-sm font-black text-foreground uppercase tracking-tight">Activity Journey</h3>
-                          <button 
-                            onClick={toggleAllDetails}
-                            className="text-[10px] font-bold bg-blue-50 text-blue-600 px-3 py-1 rounded-full border border-blue-100 hover:bg-blue-600 hover:text-white transition-all shadow-sm"
-                          >
-                            {isAllDetailsExpanded ? "Collapse All Reports" : "Expand All Reports"}
-                          </button>
-                        </div>
-                        {isFullPage && (
-                          <button 
-                            onClick={() => setIsFullPage(false)}
-                            className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 group"
-                          >
-                            <ArrowRight size={12} className="rotate-180 group-hover:-translate-x-1 transition-transform" /> Back to Dashboard
-                          </button>
-                        )}
-                      </div>
-                      <div className={`relative pl-8 space-y-6 before:absolute before:left-[15px] before:top-2 before:bottom-2 before:w-0.5 before:bg-accent ${isFullPage ? 'max-w-4xl mx-auto' : ''}`}>
-                        {selectedUserActivities.map((activity, index) => (
-                          <div key={activity.id} className="relative">
-                            <div className={`absolute -left-[23px] top-1.5 w-4 h-4 rounded-full border-2 border-white shadow-sm z-10 ${
-                              activity.pageType === "view_checkout" || activity.pageType === "checkout" ? "bg-emerald-500" : 
-                              activity.pageType === "view_product" || activity.pageType === "product_view" ? "bg-blue-500" :
-                              activity.pageType === "view_category" || activity.pageType === "category_view" ? "bg-purple-500" : 
-                              activity.pageType === "add_to_cart" ? "bg-orange-500" :
-                              activity.pageType === "click_product_card" ? "bg-sky-400" :
-                              "bg-gray-400"
-                            }`} />
-                            <div className="bg-card border border-border rounded-2xl p-4 shadow-sm hover:border-blue-200 transition-all group">
-                              <div className="flex items-start justify-between gap-4">
-                                <div className="flex items-start gap-3 flex-1 min-w-0">
-                                  <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
-                                    {(activity.pageType === "product_view" || activity.pageType === "view_product" || activity.pageType === "click_product_card" || activity.pageType === "add_to_cart") ? (() => {
-                                      const product = allProducts.find(p => p.slug === activity.metadata?.productSlug || p.id === activity.metadata?.productSlug || p.id === activity.metadata?.productId);
-                                      return product?.image ? (
-                                        <img src={product.image} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                                      ) : getIcon(activity.pageType);
-                                    })() : getIcon(activity.pageType)}
-                                  </div>
-                                  <div className="min-w-0 flex-1">
-                                    <div className="flex items-center justify-between gap-2">
-                                      <div className="text-sm font-bold text-foreground truncate">{getPageLabel(activity)}</div>
-                                      <div className="flex items-center gap-2 shrink-0">
-                                        <button 
-                                          onClick={() => toggleTechnicalDetails(activity.id)}
-                                          className={`p-1.5 rounded-lg transition-all flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider ${
-                                            showTechnicalDetails[activity.id] ? "bg-blue-100 text-blue-600" : "bg-accent/50 text-muted-foreground hover:bg-accent"
-                                          }`}
-                                          title="View Tracking Report"
-                                        >
-                                          {showTechnicalDetails[activity.id] ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                                          Details
-                                        </button>
-                                        {activity.pageType === "search" && activity.metadata?.query && (
-                                          <Link 
-                                            to={`/search?q=${encodeURIComponent(activity.metadata.query)}`}
-                                            className="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-lg transition-all flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider"
-                                          >
-                                            <ExternalLink size={12} />
-                                            Try Search
-                                          </Link>
-                                        )}
-                                      </div>
-                                    </div>
-                                    <div className="text-[10px] text-muted-foreground font-mono mt-0.5 truncate">{activity.path}</div>
-                                    
-                                    <div className="mt-2 flex flex-wrap gap-2">
-                                      <div className="px-2 py-0.5 bg-accent/50 text-[9px] text-muted-foreground rounded flex items-center gap-1">
-                                        <Maximize2 size={10} />
-                                        {activity.screenResolution || "N/A"}
-                                      </div>
-                                      <div className="px-2 py-0.5 bg-accent/50 text-[9px] text-muted-foreground rounded flex items-center gap-1 max-w-[150px] truncate" title={activity.userAgent}>
-                                        <Activity size={10} />
-                                        {activity.userAgent || "Desktop Browser"}
-                                      </div>
-                                    </div>
-
-                                    <div className="mt-3 flex flex-col gap-3">
-                                      {/* Technical Details / Tracking Report Dropdown */}
-                                      <AnimatePresence>
-                                        {showTechnicalDetails[activity.id] && (
-                                          <motion.div
-                                            initial={{ height: 0, opacity: 0 }}
-                                            animate={{ height: "auto", opacity: 1 }}
-                                            exit={{ height: 0, opacity: 0 }}
-                                            className="overflow-hidden border-l-2 border-blue-200 pl-4 py-2 my-2 space-y-3"
-                                          >
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                              <div>
-                                                <h5 className="text-[10px] font-bold text-blue-600 uppercase mb-2">Device Information</h5>
-                                                <div className="space-y-1.5">
-                                                  <div className="flex items-center justify-between text-[11px]">
-                                                    <span className="text-muted-foreground">Browser:</span>
-                                                    <span className="font-medium text-foreground truncate max-w-[150px]">{activity.userAgent}</span>
-                                                  </div>
-                                                  <div className="flex items-center justify-between text-[11px]">
-                                                    <span className="text-muted-foreground">Resolution:</span>
-                                                    <span className="font-medium text-foreground">{activity.screenResolution}</span>
-                                                  </div>
-                                                  <div className="flex items-center justify-between text-[11px]">
-                                                    <span className="text-muted-foreground">IP Address:</span>
-                                                    <span className="font-medium text-foreground font-mono">{activity.ipAddress || "Unknown"}</span>
-                                                  </div>
-                                                </div>
-                                              </div>
-                                              <div>
-                                                <h5 className="text-[10px] font-bold text-purple-600 uppercase mb-2">Metadata Tracking</h5>
-                                                {Object.keys(activity.metadata || {}).length > 0 ? (
-                                                  <div className="space-y-1.5">
-                                                    {Object.entries(activity.metadata || {}).map(([key, value]) => (
-                                                      <div key={key} className="flex items-center justify-between text-[11px]">
-                                                        <span className="text-muted-foreground">{key}:</span>
-                                                        <span className="font-medium text-foreground">{String(value)}</span>
-                                                      </div>
-                                                    ))}
-                                                  </div>
-                                                ) : (
-                                                  <p className="text-[11px] italic text-muted-foreground">No additional metadata captured.</p>
-                                                )}
-                                              </div>
-                                            </div>
-                                            <div className="pt-2 flex items-center justify-between border-t border-blue-100">
-                                              <span className="text-[10px] text-blue-400 font-mono">ID: {activity.id}</span>
-                                              <span className="text-[10px] text-blue-400 font-mono">Duration: {activity.duration}s</span>
-                                            </div>
-                                          </motion.div>
-                                        )}
-                                      </AnimatePresence>
-
-                                      {(activity.pageType === "product_view" || activity.pageType === "view_product" || activity.pageType === "click_product_card" || activity.pageType === "add_to_cart") && (() => {
-                                        const product = allProducts.find(p => p.slug === activity.metadata?.productSlug || p.id === activity.metadata?.productSlug || p.id === activity.metadata?.productId);
-                                        const productName = product?.name || activity.metadata?.productName;
-                                        const productBrand = product?.brand || activity.metadata?.productBrand;
-                                        const productPrice = product?.price || Number(activity.metadata?.productPrice);
-                                        const productImage = product?.image;
-
-                                        if (!productName) return null;
-
-                                        return (
-                                          <div 
-                                            onClick={() => handleToggleProductDetails(activity.id)}
-                                            className={`flex items-center gap-4 p-3 rounded-2xl border transition-all cursor-pointer group/product ${
-                                              expandedActivityId === activity.id 
-                                                ? "bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20" 
-                                                : "bg-blue-50/50 border-blue-100/50 hover:bg-blue-50 hover:border-blue-200"
-                                            }`}
-                                          >
-                                            <div className={`w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center p-1.5 border transition-colors ${
-                                              expandedActivityId === activity.id ? "bg-white border-white" : "bg-white border-blue-100"
-                                            }`}>
-                                              {productImage ? (
-                                                <img 
-                                                  src={productImage} 
-                                                  alt={productName}
-                                                  className="max-w-full max-h-full object-contain rounded"
-                                                  referrerPolicy="no-referrer"
-                                                />
-                                              ) : (
-                                                <Package size={20} className="text-blue-600" />
-                                              )}
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                              <div className={`text-[10px] font-bold uppercase tracking-tight truncate ${expandedActivityId === activity.id ? "text-blue-100" : "text-blue-600"}`}>
-                                                {productBrand || "Product"}
-                                              </div>
-                                              <div className={`text-xs font-bold truncate ${expandedActivityId === activity.id ? "text-white" : "text-foreground"}`}>
-                                                {productName}
-                                              </div>
-                                            </div>
-                                            <div className="flex items-center gap-3 shrink-0">
-                                              <div className={`text-sm font-bold ${expandedActivityId === activity.id ? "text-white" : "text-blue-600"}`}>
-                                                {formatPrice(productPrice || 0)}
-                                              </div>
-                                              <div className={`p-1.5 rounded-lg transition-all ${
-                                                expandedActivityId === activity.id ? "bg-white/20 text-white" : "bg-blue-100 text-blue-600 group-hover/product:bg-blue-600 group-hover/product:text-white"
-                                              }`}>
-                                                <Eye size={14} />
-                                              </div>
-                                            </div>
-                                          </div>
-                                        );
-                                      })()}
-
-                                      <div className="flex flex-wrap gap-2">
-                                        {activity.pageType === "category_view" && (
-                                          <>
-                                            <div className="px-2 py-1 bg-purple-50 text-purple-700 rounded-lg border border-purple-100 text-[10px] font-medium flex items-center gap-1">
-                                              <Filter size={10} />
-                                              Category: {activity.metadata?.categorySlug}
-                                            </div>
-                                            {activity.metadata?.brands && (
-                                              <div className="px-2 py-1 bg-blue-50 text-blue-700 rounded-lg border border-blue-100 text-[10px] font-medium flex items-center gap-1">
-                                                <Tag size={10} />
-                                                Brands: {activity.metadata.brands}
-                                              </div>
-                                            )}
-                                            {(activity.metadata?.minPrice || activity.metadata?.maxPrice) && (
-                                              <div className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100 text-[10px] font-medium flex items-center gap-1">
-                                                <Clock size={10} />
-                                                Price: {activity.metadata.minPrice || 0} - {activity.metadata.maxPrice || 'Max'}
-                                              </div>
-                                            )}
-                                          </>
-                                        )}
-                                        
-                                        {activity.pageType === "search" && activity.metadata?.query && (
-                                          <div className="px-3 py-1.5 bg-amber-50 text-amber-700 rounded-xl border border-amber-100 text-[11px] font-bold flex items-center gap-2 w-full">
-                                            <Search size={12} />
-                                            Search Query: "{activity.metadata.query}"
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                    {/* Product Details Dropdown */}
-                                    <AnimatePresence>
-                                      {expandedActivityId === activity.id && (
-                                        activity.pageType === "product_view" || 
-                                        activity.pageType === "view_product" || 
-                                        activity.pageType === "click_product_card" || 
-                                        activity.pageType === "add_to_cart"
-                                      ) && (
-                                        <motion.div
-                                          initial={{ height: 0, opacity: 0 }}
-                                          animate={{ height: "auto", opacity: 1 }}
-                                          exit={{ height: 0, opacity: 0 }}
-                                          className="overflow-hidden"
-                                        >
-                                          <div className="mt-4 pt-4 border-t border-border">
-                                            {(() => {
-                                              const product = allProducts.find(p => p.slug === activity.metadata?.productSlug || p.id === activity.metadata?.productSlug || p.id === activity.metadata?.productId);
-                                              if (!product) return <p className="text-xs text-muted-foreground">Product details not found.</p>;
-                                              return (
-                                                <div className="flex flex-col md:flex-row gap-4">
-                                                  <div className="w-24 h-24 bg-muted rounded-xl flex-shrink-0 flex items-center justify-center p-2">
-                                                    <img 
-                                                      src={product.image} 
-                                                      alt={product.name}
-                                                      className="max-w-full max-h-full object-contain rounded-lg"
-                                                      referrerPolicy="no-referrer"
-                                                    />
-                                                  </div>
-                                                  <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                      <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">{product.brand_name || product.brand}</span>
-                                                      <span className="text-[10px] text-muted-foreground/50">•</span>
-                                                      <span className="text-[10px] font-bold text-purple-600 uppercase tracking-wider">{product.category_name || product.category}</span>
-                                                    </div>
-                                                    <h4 className="text-sm font-bold text-foreground mb-2">{product.name}</h4>
-                                                    <p className="text-xs text-muted-foreground line-clamp-2 mb-3 leading-relaxed">{product.description}</p>
-                                                    
-                                                    <div className="space-y-3">
-                                                      <div>
-                                                        <h5 className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Specifications</h5>
-                                                        <div className="flex flex-wrap gap-1.5">
-                                                          {(Array.isArray(product.specs) ? product.specs : []).map(spec => (
-                                                            <span key={spec} className="px-2 py-0.5 bg-accent text-muted-foreground text-[9px] font-medium rounded-md">
-                                                              {spec}
-                                                            </span>
-                                                          ))}
-                                                        </div>
-                                                      </div>
-                                                      <div className="flex items-center justify-between pt-2">
-                                                        <div className="text-sm font-mono font-bold text-blue-600">{formatPrice(product.price || 0)}</div>
-                                                        <Link 
-                                                          to={product.slug || product.id ? `/product/${product.slug || product.id}` : "#"}
-                                                          className={`text-[10px] font-bold text-blue-600 hover:underline flex items-center gap-1 ${!(product.slug || product.id) ? "pointer-events-none" : ""}`}
-                                                        >
-                                                          Full Page <ExternalLink size={10} />
-                                                        </Link>
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                              );
-                                            })()}
-                                          </div>
-                                        </motion.div>
-                                      )}
-                                    </AnimatePresence>
-                                  </div>
-                                </div>
-                                <div className="text-right shrink-0">
-                                  <div className="text-xs font-bold text-foreground">{activity.duration}s</div>
-                                  <div className="text-[10px] text-muted-foreground">
-                                    {(() => {
-                                      const date = safeToDate(activity.timestamp);
-                                      return date ? format(date, "HH:mm:ss") : "Unknown";
-                                    })()}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                </motion.div>
-              ) : (
-                  <div className="h-full flex flex-col items-center justify-center bg-card border border-dashed border-border rounded-3xl p-12 text-center">
-                    <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center text-muted-foreground/50 mb-4">
-                      <User size={32} />
-                    </div>
-                    <h3 className="text-lg font-bold text-foreground">Select a User</h3>
-                    <p className="text-sm text-muted-foreground max-w-xs mx-auto mt-1">
-                      Choose a user from the list to view their detailed activity journey and engagement metrics.
-                    </p>
-                  </div>
-                )}
-              </AnimatePresence>
+        {/* KPI 2: Total Time Spent on Site */}
+        <div className="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-xs">
+          <div className="flex items-center gap-2.5 text-muted-foreground mb-2">
+            <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center font-bold">
+              <Clock size={16} />
             </div>
+            <span className="text-[11px] font-bold uppercase tracking-wider">Total Time Spent</span>
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-foreground">
+            {formatSeconds(totalSecondsAll)}
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-1">
+            {totalSecondsAll.toLocaleString()} total active seconds
+          </div>
+        </div>
+
+        {/* KPI 3: Card Engagement Time */}
+        <div className="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-xs">
+          <div className="flex items-center gap-2.5 text-muted-foreground mb-2">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold">
+              <Package size={16} />
+            </div>
+            <span className="text-[11px] font-bold uppercase tracking-wider">Card Seconds Spent</span>
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-emerald-600">
+            {formatSeconds(totalCardHoverSeconds)}
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-1">
+            Across {cardStats.length} product cards
+          </div>
+        </div>
+
+        {/* KPI 4: Total Logged Actions */}
+        <div className="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-xs">
+          <div className="flex items-center gap-2.5 text-muted-foreground mb-2">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold">
+              <Activity size={16} />
+            </div>
+            <span className="text-[11px] font-bold uppercase tracking-wider">Total Events Logged</span>
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-foreground">
+            {activities.length.toLocaleString()}
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-1">
+            Live updates every 2.5s
           </div>
         </div>
       </div>
-    );
+
+      {/* Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-border scrollbar-none">
+        {[
+          { id: "cards", label: `Product Cards Engagement (${cardStats.length})`, icon: Package },
+          { id: "pages", label: `Pages Time Spent (${pageStats.length})`, icon: Clock },
+          { id: "feed", label: `Live Activity Stream (${filteredActivities.length})`, icon: Activity },
+          { id: "users", label: `User Journeys (${userSummaries.length})`, icon: UsersIcon },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
+                isActive
+                  ? "bg-foreground text-background shadow-xs font-black"
+                  : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Icon size={14} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* TAB 1: PRODUCT CARDS ENGAGEMENT & SECONDS SPENT */}
+      {activeTab === "cards" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h2 className="text-base font-bold text-foreground">
+                Time Spent & Interactions Per Product Card
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Tracks exactly every second users spent hovering, inspecting, and clicking on particular product cards.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-muted/60 border-b border-border text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="py-3 px-4">Product Card</th>
+                    <th className="py-3 px-4">Total Seconds Spent</th>
+                    <th className="py-3 px-4 text-center">Hovers</th>
+                    <th className="py-3 px-4 text-center">Clicks</th>
+                    <th className="py-3 px-4 text-center">Color Swatches</th>
+                    <th className="py-3 px-4 text-center">Quick Adds</th>
+                    <th className="py-3 px-4 text-center">Shoppers</th>
+                    <th className="py-3 px-4 text-right">View PDP</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60 font-medium">
+                  {cardStats.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="py-12 text-center text-muted-foreground">
+                        No card interactions logged yet. Browse products on the homepage or collections to generate live data!
+                      </td>
+                    </tr>
+                  ) : (
+                    cardStats.map((c) => {
+                      const maxSec = cardStats[0]?.totalSeconds || 1;
+                      const pct = Math.min(100, Math.round((c.totalSeconds / maxSec) * 100));
+
+                      return (
+                        <tr key={c.handle} className="hover:bg-muted/30 transition-colors">
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-3">
+                              {c.image ? (
+                                <img
+                                  src={c.image}
+                                  alt=""
+                                  className="w-10 h-12 object-cover rounded-lg border border-border"
+                                />
+                              ) : (
+                                <div className="w-10 h-12 bg-muted rounded-lg border border-border flex items-center justify-center">
+                                  <Package size={16} className="text-muted-foreground" />
+                                </div>
+                              )}
+                              <div>
+                                <div className="font-bold text-foreground text-xs">{c.title}</div>
+                                <div className="text-[10px] text-muted-foreground font-mono">
+                                  {c.handle} • ${parseFloat(String(c.price || "0")).toFixed(2)}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Seconds Spent with Progress Bar */}
+                          <td className="py-3.5 px-4 min-w-[180px]">
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-bold text-foreground font-mono">
+                                  {formatSeconds(c.totalSeconds)}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground font-mono">
+                                  {c.totalSeconds}s
+                                </span>
+                              </div>
+                              <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                                <div
+                                  className="bg-blue-600 h-1.5 rounded-full transition-all"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="py-3.5 px-4 text-center font-bold font-mono">
+                            {c.hoverCount}
+                          </td>
+                          <td className="py-3.5 px-4 text-center font-bold font-mono text-indigo-600">
+                            {c.clickCount}
+                          </td>
+                          <td className="py-3.5 px-4 text-center font-bold font-mono text-purple-600">
+                            {c.swatchCount}
+                          </td>
+                          <td className="py-3.5 px-4 text-center font-bold font-mono text-emerald-600">
+                            {c.quickAddCount}
+                          </td>
+                          <td className="py-3.5 px-4 text-center font-bold">
+                            <span className="px-2 py-0.5 rounded-full bg-muted text-[10px]">
+                              {c.uniqueUsers.size}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <a
+                              href={`/products/${c.handle}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="p-1.5 inline-flex items-center gap-1 rounded-lg border border-border hover:bg-muted text-muted-foreground hover:text-foreground text-[11px]"
+                            >
+                              <ExternalLink size={12} />
+                            </a>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: PAGE DURATION & SECONDS SPENT */}
+      {activeTab === "pages" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h2 className="text-base font-bold text-foreground">
+                Time Spent Per Page URL
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Tracks active seconds spent across individual pages, routes, and collection catalogs.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-muted/60 border-b border-border text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="py-3 px-4">Page Path</th>
+                    <th className="py-3 px-4">Type</th>
+                    <th className="py-3 px-4">Total Seconds Spent</th>
+                    <th className="py-3 px-4 text-center">Visits</th>
+                    <th className="py-3 px-4 text-center">Avg Time / Visit</th>
+                    <th className="py-3 px-4 text-center">Shoppers</th>
+                    <th className="py-3 px-4 text-right">Open</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60 font-medium">
+                  {pageStats.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center text-muted-foreground">
+                        No page views tracked yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    pageStats.map((p) => {
+                      const maxSec = pageStats[0]?.totalSeconds || 1;
+                      const pct = Math.min(100, Math.round((p.totalSeconds / maxSec) * 100));
+                      const avgSec = p.visits > 0 ? Math.round(p.totalSeconds / p.visits) : p.totalSeconds;
+
+                      return (
+                        <tr key={p.path} className="hover:bg-muted/30 transition-colors">
+                          <td className="py-3.5 px-4 font-mono text-xs font-bold text-foreground">
+                            {p.path}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 font-bold text-[10px] uppercase">
+                              {p.pageType}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 min-w-[180px]">
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-bold text-foreground font-mono">
+                                  {formatSeconds(p.totalSeconds)}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground font-mono">
+                                  {p.totalSeconds}s
+                                </span>
+                              </div>
+                              <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                                <div
+                                  className="bg-emerald-600 h-1.5 rounded-full transition-all"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 text-center font-bold font-mono">
+                            {p.visits}
+                          </td>
+                          <td className="py-3.5 px-4 text-center font-mono font-bold text-neutral-600">
+                            {formatSeconds(avgSec)}
+                          </td>
+                          <td className="py-3.5 px-4 text-center font-bold">
+                            <span className="px-2 py-0.5 rounded-full bg-muted text-[10px]">
+                              {p.uniqueUsers.size}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <a
+                              href={p.path}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="p-1.5 inline-flex items-center gap-1 rounded-lg border border-border hover:bg-muted text-muted-foreground hover:text-foreground text-[11px]"
+                            >
+                              <ExternalLink size={12} />
+                            </a>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: LIVE REAL-TIME ACTIVITY STREAM */}
+      {activeTab === "feed" && (
+        <div className="space-y-4">
+          {/* Controls & Filter Bar */}
+          <div className="bg-card border border-border rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2 w-full sm:w-auto flex-1 max-w-md">
+              <Search size={15} className="text-muted-foreground" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search user, product, card, or page path..."
+                className="w-full bg-transparent text-xs outline-none"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+              <span className="text-[11px] font-bold text-muted-foreground">Action:</span>
+              <select
+                value={actionFilter}
+                onChange={(e) => setActionFilter(e.target.value)}
+                className="bg-background border border-border rounded-xl px-2.5 py-1 text-xs font-semibold outline-none"
+              >
+                <option value="all">All Actions</option>
+                <option value="card_hover">Card Hovers</option>
+                <option value="card_click">Card Clicks</option>
+                <option value="card_swatch_select">Swatch Switches</option>
+                <option value="card_quick_add">Quick Adds</option>
+                <option value="page_duration">Page Durations</option>
+                <option value="page_view">Page Views</option>
+              </select>
+
+              {selectedUserUid && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedUserUid(null)}
+                  className="px-2.5 py-1 rounded-xl bg-blue-500/10 text-blue-600 text-xs font-bold"
+                >
+                  Clear User Filter ✕
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Activity Stream List */}
+          <div className="space-y-2.5">
+            {filteredActivities.length === 0 ? (
+              <div className="bg-card border border-border rounded-2xl p-12 text-center text-muted-foreground text-xs">
+                No activities matching current filter.
+              </div>
+            ) : (
+              filteredActivities.slice(0, 150).map((act) => {
+                const badge = getActionBadge(act);
+                const BadgeIcon = badge.icon;
+                const date = safeToDate(act.timestamp) || new Date();
+
+                return (
+                  <div
+                    key={act.id}
+                    className="bg-card border border-border rounded-xl p-3 sm:p-4 hover:border-blue-500/40 transition-all shadow-xs"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                      {/* Left: User & Action */}
+                      <div className="flex items-start sm:items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-muted border border-border flex items-center justify-center font-bold text-xs shrink-0">
+                          {act.displayName.charAt(0).toUpperCase()}
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-foreground text-xs">
+                              {act.displayName}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground font-mono">
+                              ({act.uid})
+                            </span>
+                            <span
+                              className={`px-2 py-0.5 rounded-full border text-[10px] font-bold flex items-center gap-1 ${badge.color}`}
+                            >
+                              <BadgeIcon size={10} />
+                              <span>{badge.label}</span>
+                            </span>
+                          </div>
+
+                          <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
+                            <span className="font-mono text-[11px] text-foreground font-semibold">
+                              {act.path}
+                            </span>
+                            {act.metadata?.productTitle && (
+                              <span className="text-blue-600 font-bold">
+                                • Card: {String(act.metadata.productTitle)}
+                              </span>
+                            )}
+                            {act.metadata?.swatchName && (
+                              <span className="text-purple-600 font-bold">
+                                • Swatch: {String(act.metadata.swatchName)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: Duration Pill & Timestamp */}
+                      <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
+                        {act.duration > 0 && (
+                          <div className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-xs font-mono font-bold flex items-center gap-1">
+                            <Clock size={11} />
+                            <span>{act.duration}s</span>
+                          </div>
+                        )}
+
+                        <span className="text-[10px] text-muted-foreground font-mono">
+                          {format(date, "HH:mm:ss")}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => toggleTechnicalDetails(act.id)}
+                          className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                          title="Toggle JSON details"
+                        >
+                          {showTechnicalDetails[act.id] ? (
+                            <ChevronDown size={14} />
+                          ) : (
+                            <ChevronRight size={14} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Collapsible Metadata */}
+                    {showTechnicalDetails[act.id] && (
+                      <div className="mt-3 pt-3 border-t border-border/60 text-[11px] font-mono bg-muted/40 p-3 rounded-lg space-y-1">
+                        <div>ID: {act.id}</div>
+                        <div>User Agent: {act.userAgent}</div>
+                        <div>Screen: {act.screenResolution}</div>
+                        <div>Metadata: {JSON.stringify(act.metadata)}</div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: USERS LIST & JOURNEYS */}
+      {activeTab === "users" && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-4 space-y-3">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <UsersIcon size={16} />
+              <span>All Tracked Shoppers ({userSummaries.length})</span>
+            </h3>
+
+            <div className="space-y-2 max-h-[650px] overflow-y-auto pr-1">
+              {userSummaries.map((u) => {
+                const isSelected = selectedUserUid === u.uid;
+                return (
+                  <button
+                    key={u.uid}
+                    type="button"
+                    onClick={() => setSelectedUserUid(u.uid)}
+                    className={`w-full text-left p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                      isSelected
+                        ? "bg-blue-500/10 border-blue-500 shadow-xs"
+                        : "bg-card border-border hover:bg-muted/40"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs ${
+                          isSelected ? "bg-blue-600 text-white" : "bg-muted text-foreground"
+                        }`}
+                      >
+                        {u.displayName.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-bold text-xs text-foreground truncate">
+                          {u.displayName}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground truncate">{u.email}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-mono font-bold text-xs text-foreground">
+                          {formatSeconds(u.totalTime)}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {u.totalActivities} events
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="lg:col-span-8">
+            {selectedUserUid ? (
+              <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
+                <div className="flex items-center justify-between pb-4 border-b border-border">
+                  <div>
+                    <h3 className="text-base font-bold text-foreground">
+                      User Journey: {userSummaries.find((u) => u.uid === selectedUserUid)?.displayName}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Chronological history of every second spent and card touched by this user.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedUserUid(null)}
+                    className="text-xs font-bold text-muted-foreground hover:text-foreground"
+                  >
+                    Close User
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {activities
+                    .filter((a) => a.uid === selectedUserUid)
+                    .map((act) => {
+                      const badge = getActionBadge(act);
+                      const BadgeIcon = badge.icon;
+                      return (
+                        <div
+                          key={act.id}
+                          className="p-3 bg-muted/40 border border-border rounded-xl flex items-center justify-between gap-3 text-xs"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`px-2 py-0.5 rounded-full border text-[10px] font-bold flex items-center gap-1 ${badge.color}`}
+                            >
+                              <BadgeIcon size={10} />
+                              <span>{badge.label}</span>
+                            </span>
+                            <span className="font-mono font-semibold">{act.path}</span>
+                            {act.metadata?.productTitle && (
+                              <span className="text-blue-600 font-bold">
+                                • {String(act.metadata.productTitle)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {act.duration > 0 && (
+                              <span className="font-mono font-bold text-emerald-600">
+                                ⏱ {act.duration}s
+                              </span>
+                            )}
+                            <span className="text-[10px] text-muted-foreground font-mono">
+                              {format(safeToDate(act.timestamp) || new Date(), "HH:mm:ss")}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-card border border-border rounded-2xl p-12 text-center text-muted-foreground text-xs">
+                Select a user on the left to view their complete journey and second-by-second breakdown.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default UserActivity;

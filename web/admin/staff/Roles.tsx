@@ -61,14 +61,14 @@ const Roles = () => {
   useGSAPReveal(containerRef, ".gsap-reveal", { opacity: 0, y: 20, duration: 0.6, stagger: 0.05 });
 
   const filteredRoles = roles.filter(role => 
-    role.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (role.permissions && Array.isArray(role.permissions) && role.permissions.some(p => p.toLowerCase().includes(searchTerm.toLowerCase())))
+    (role.name || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (role.permissions && Array.isArray(role.permissions) && role.permissions.some(p => (p || "").toLowerCase().includes(searchTerm.toLowerCase())))
   );
 
   const filteredUsers = customers.filter(customer => 
     !selectedUsers.find(u => u.id === customer.id) &&
-    (customer.name.toLowerCase().includes(userSearchTerm.toLowerCase()) || 
-    customer.email.toLowerCase().includes(userSearchTerm.toLowerCase()))
+    (((customer.name || customer.displayName || "").toLowerCase().includes(userSearchTerm.toLowerCase())) || 
+    ((customer.email || "").toLowerCase().includes(userSearchTerm.toLowerCase())))
   );
 
   const handleAddRole = () => {

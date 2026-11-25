@@ -26,9 +26,14 @@ class ProductListView(generics.ListCreateAPIView):
 
         # Filter by category
         category = params.get("category")
-        if category:
+        if category and category.lower() not in ["all", "shop-all"]:
             queryset = queryset.filter(
-                Q(category__handle__iexact=category) | Q(category__title__iexact=category)
+                Q(category__handle__iexact=category)
+                | Q(category__title__iexact=category)
+                | Q(collections__handle__iexact=category)
+                | Q(collections__title__iexact=category)
+                | Q(subcategory__handle__iexact=category)
+                | Q(subcategory__title__iexact=category)
             )
 
         # Filter by subcategory
@@ -40,9 +45,12 @@ class ProductListView(generics.ListCreateAPIView):
 
         # Filter by collection
         collection = params.get("collection")
-        if collection:
+        if collection and collection.lower() not in ["all", "shop-all"]:
             queryset = queryset.filter(
-                Q(collections__handle__iexact=collection) | Q(collections__title__iexact=collection)
+                Q(collections__handle__iexact=collection)
+                | Q(collections__title__iexact=collection)
+                | Q(category__handle__iexact=collection)
+                | Q(category__title__iexact=collection)
             )
 
         # Denim attributes
@@ -186,7 +194,10 @@ class CollectionDetailView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, handle):
-        collection = Collection.objects.filter(handle=handle).first()
+        if str(handle).isdigit():
+            collection = Collection.objects.filter(id=int(handle)).first()
+        else:
+            collection = Collection.objects.filter(handle=handle).first()
         if not collection:
             return Response({"error": "Collection not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -195,3 +206,14 @@ class CollectionDetailView(APIView):
         data = serializer.data
         data["product_items"] = products
         return Response(data)
+
+    def delete(self, request, handle):
+        if str(handle).isdigit():
+            collection = Collection.objects.filter(id=int(handle)).first()
+        else:
+            collection = Collection.objects.filter(handle=handle).first()
+        if not collection:
+            return Response({"error": "Collection not found"}, status=status.HTTP_404_NOT_FOUND)
+        title = collection.title
+        collection.delete()
+        return Response({"success": True, "message": f"Collection '{title}' deleted successfully."})

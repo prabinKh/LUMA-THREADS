@@ -4,6 +4,7 @@ import { CartProvider } from "@/components/CartProvider";
 import { CartDrawer } from "@/components/CartDrawer";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { ActivityTracker } from "@/components/ActivityTracker";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -32,6 +33,7 @@ export default function RootLayout({
       </head>
       <body suppressHydrationWarning>
         <AuthProvider>
+          <ActivityTracker />
           <CartProvider>
             <div className="site-shell">
               <Header />

@@ -181,9 +181,10 @@ export function ProductDetailView({
               title="Click to zoom"
             >
               <Image
-                src={imgSrc}
+                src={imgSrc || "/placeholder.jpg"}
                 alt={`${product.title} - ${currentColorway} view ${idx + 1}`}
                 fill
+                unoptimized
                 priority={idx < 2}
                 sizes="(min-width: 990px) 35vw, (min-width: 768px) 50vw, 100vw"
                 style={{ objectFit: "cover" }}
@@ -292,12 +293,12 @@ export function ProductDetailView({
               </span>
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
-              {product.swatches.map((swatch) => {
+              {product.swatches.map((swatch, sIdx) => {
                 const isActive =
                   activeSwatch?.name.toLowerCase() === swatch.name.toLowerCase();
                 return (
                   <button
-                    key={swatch.name}
+                    key={swatch.id || `${swatch.name || "swatch"}-${swatch.color || ""}-${sIdx}`}
                     type="button"
                     className={`pdp-swatch-square ${isActive ? "active" : ""}`}
                     onClick={() => handleSwatchClick(swatch)}
@@ -365,11 +366,11 @@ export function ProductDetailView({
           </div>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: "0.8rem" }}>
-            {currentSizes.map((sz) => {
+            {currentSizes.map((sz, szIdx) => {
               const isSelected = selectedSize === sz;
               return (
                 <button
-                  key={sz}
+                  key={`${sz}-${szIdx}`}
                   type="button"
                   className={`pdp-size-btn ${isSelected ? "active" : ""}`}
                   onClick={() => handleSizeClick(sz)}
@@ -463,8 +464,18 @@ export function ProductDetailView({
             </div>
             {openAccordions.description && (
               <div className="pdp-accordion-body">
-                {product.description ||
-                  "Everyday essentials with utilitarian sensibility. Perfect for the busy, modern woman who demands her clothing work as hard as she does."}
+                {activeSwatch?.descriptions && activeSwatch.descriptions.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                    {activeSwatch.descriptions.map((desc: string, i: number) => (
+                      <p key={i} style={{ margin: 0, lineHeight: 1.6 }}>{desc}</p>
+                    ))}
+                  </div>
+                ) : activeSwatch?.description ? (
+                  <p style={{ margin: 0, lineHeight: 1.6 }}>{activeSwatch.description}</p>
+                ) : (
+                  product.description ||
+                  "Everyday essentials with utilitarian sensibility. Perfect for the busy, modern woman who demands her clothing work as hard as she does."
+                )}
               </div>
             )}
           </div>
@@ -553,9 +564,10 @@ export function ProductDetailView({
             }}
           >
             <Image
-              src={zoomedImage}
+              src={zoomedImage || "/placeholder.jpg"}
               alt="Zoomed view"
               fill
+              unoptimized
               style={{ objectFit: "contain" }}
             />
           </div>

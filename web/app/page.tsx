@@ -3,6 +3,8 @@ import Link from "next/link";
 import { ProductCarousel } from "@/components/ProductCarousel";
 import { CategoryGrid } from "@/components/CategoryGrid";
 import { EditorialSection } from "@/components/EditorialSection";
+import { HomeHeroBanner } from "@/components/HomeHeroBanner";
+import { HomeHolidayBanner } from "@/components/HomeHolidayBanner";
 import {
   getCatalog,
   getHomeProducts,
@@ -17,73 +19,17 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* 1. Main Hero Image Banner */}
-      <section className="image-banner" style={{ position: "relative", width: "100%", minHeight: "75vh", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", background: "#f0f0f0" }}>
-        <picture style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
-          <source media="(max-width: 749px)" srcSet={catalog.hero.mobile} />
-          <Image
-            src={catalog.hero.desktop}
-            alt="Pistola Denim Campaign"
-            fill
-            priority
-            sizes="100vw"
-            style={{ objectFit: "cover" }}
-          />
-        </picture>
-        <div
-          style={{
-            position: "relative",
-            zIndex: 2,
-            textAlign: "center",
-            padding: "2rem",
-            color: "#fff",
-            textShadow: "0 2px 10px rgba(0,0,0,0.4)",
-            maxWidth: "800px",
-          }}
-        >
-          <p
-            style={{
-              fontSize: "1.3rem",
-              letterSpacing: "3px",
-              textTransform: "uppercase",
-              fontWeight: 600,
-              margin: "0 0 1rem",
-            }}
-          >
-            {catalog.hero.subtitle || "EVERYDAY UTILITY. ELEVATED EASE."}
-          </p>
-          <h1
-            style={{
-              fontSize: "clamp(3rem, 6vw, 5.5rem)",
-              letterSpacing: "4px",
-              textTransform: "uppercase",
-              fontWeight: 700,
-              margin: "0 0 2rem",
-              lineHeight: 1.1,
-            }}
-          >
-            {catalog.hero.title || "WINTER 2026"}
-          </h1>
-          <Link
-            href={catalog.hero.ctaHref}
-            style={{
-              display: "inline-block",
-              background: "#fff",
-              color: "#000",
-              padding: "1.2rem 2.8rem",
-              fontSize: "1.2rem",
-              fontWeight: 600,
-              letterSpacing: "2px",
-              textTransform: "uppercase",
-              textDecoration: "none",
-              boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
-              transition: "all 0.2s ease",
-            }}
-          >
-            {catalog.hero.cta}
-          </Link>
-        </div>
-      </section>
+      {/* 1. Main Dynamic Hero Campaign Banner */}
+      <HomeHeroBanner
+        initialHero={{
+          title: catalog.hero?.title,
+          subtitle: catalog.hero?.subtitle,
+          desktop: catalog.hero?.desktop,
+          mobile: catalog.hero?.mobile,
+          cta: catalog.hero?.cta,
+          ctaHref: catalog.hero?.ctaHref,
+        }}
+      />
 
       {/* 2. Product Carousel: New Arrivals */}
       <ProductCarousel
@@ -94,84 +40,8 @@ export default async function HomePage() {
         products={newArrivals}
       />
 
-      {/* 3. Secondary Banner: Holiday Collection */}
-      {catalog.bannerHoliday && (
-        <section
-          style={{
-            position: "relative",
-            width: "100%",
-            height: "60vh",
-            minHeight: "450px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            overflow: "hidden",
-            margin: "2rem 0",
-          }}
-        >
-          <Image
-            src={catalog.bannerHoliday.image}
-            alt={catalog.bannerHoliday.title}
-            fill
-            sizes="100vw"
-            style={{ objectFit: "cover" }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: "rgba(0,0,0,0.25)",
-            }}
-          />
-          <div
-            style={{
-              position: "relative",
-              zIndex: 2,
-              textAlign: "center",
-              color: "#fff",
-              padding: "2rem",
-            }}
-          >
-            <p
-              style={{
-                fontSize: "1.2rem",
-                letterSpacing: "2px",
-                textTransform: "uppercase",
-                margin: "0 0 0.8rem",
-              }}
-            >
-              {catalog.bannerHoliday.subtitle}
-            </p>
-            <h2
-              style={{
-                fontSize: "clamp(2.5rem, 5vw, 4rem)",
-                letterSpacing: "3px",
-                textTransform: "uppercase",
-                margin: "0 0 2rem",
-                fontWeight: 600,
-              }}
-            >
-              {catalog.bannerHoliday.title}
-            </h2>
-            <Link
-              href={catalog.bannerHoliday.ctaHref}
-              style={{
-                display: "inline-block",
-                background: "#000",
-                color: "#fff",
-                border: "1px solid #fff",
-                padding: "1.2rem 2.8rem",
-                fontSize: "1.2rem",
-                fontWeight: 600,
-                letterSpacing: "2px",
-                textTransform: "uppercase",
-              }}
-            >
-              {catalog.bannerHoliday.cta}
-            </Link>
-          </div>
-        </section>
-      )}
+      {/* 3. Secondary Dynamic Banner: Holiday Collection */}
+      <HomeHolidayBanner initialBanner={catalog.bannerHoliday as any} />
 
       {/* 4. Shop By Category Grid */}
       <CategoryGrid categories={catalog.categories} />

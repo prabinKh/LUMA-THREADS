@@ -1,0 +1,21 @@
+{
+  "subtitle": "EXCLUSIVE SELVEDGE RUNWAY ATELIER",
+  "title": "SPRING RUNWAY 2026",
+  "desktop": "https://media.gucci.com/style/DarkGray_Center_0_0_2400x2400/1792168250/A00CNF_AAHJ5_1062_002_100_0000_Light.jpg",
+  "mobile": "https://pistoladenim.com/cdn/shop/files/mobile_banner_winter24_2.jpg?v=1730999554&width=1500",
+  "cta": "EXPLORE THE CAMPAIGN",
+  "ctaHref": "/collections/all-new",
+  "secondaryCta": "SHOP BEST SELLERS",
+  "secondaryCtaHref": "/collections/best-sellers",
+  "badge": "PARIS FASHION WEEK \u2022 EXCLUSIVE DROP",
+  "overlayOpacity": 20,
+  "alignment": "center",
+  "bannerHoliday": {
+    "enabled": true,
+    "title": "HOLIDAY 2026",
+    "subtitle": "CURATED CAPSULE COLLECTION",
+    "image": "https://static.nike.com/a/images/c_limit,w_2880/f_auto,q_auto,u_9ddf04c7-2a9a-4d76-add1-d15af8f0263d,c_scale,fl_relative,w_1.0,h_1.0,fl_layer_apply/73627869-5239-40d9-b41f-5dcdaba413e4/KILLSHOT+2+LEATHER.png",
+    "cta": "SHOP THE DROP",
+    "ctaHref": "/collections/all-denim"
+  }
+}

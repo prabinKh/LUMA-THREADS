@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Product, ProductSwatch } from "@/lib/types";
 import { formatPrice } from "@/lib/catalog";
 import { useCart } from "./CartProvider";
+import { userActivityService } from "@/api/userActivityService";
 
 export function ProductCard({ product }: { product: Product }) {
   const [isHovered, setIsHovered] = useState(false);
@@ -13,6 +14,7 @@ export function ProductCard({ product }: { product: Product }) {
   const [activeSwatch, setActiveSwatch] = useState<ProductSwatch | null>(
     product.swatches && product.swatches.length > 0 ? product.swatches[0] : null
   );
+  const hoverStartTimeRef = useRef<number | null>(null);
 
   const { addItem } = useCart();
 
@@ -65,6 +67,19 @@ export function ProductCard({ product }: { product: Product }) {
     if (selectedSize && !swatchSizes.includes(selectedSize)) {
       setSelectedSize("");
     }
+    userActivityService.log({
+      action: "card_swatch_select",
+      pageType: "product_card",
+      path: productUrl,
+      duration: 0,
+      metadata: {
+        productTitle: product.title,
+        productHandle: product.handle,
+        productPrice: swatch.price || product.price,
+        productColor: swatch.name,
+        swatchColorHex: swatch.color,
+      },
+    });
   };
 
   // Add to cart only when clicking the Quick Add button
@@ -80,13 +95,71 @@ export function ProductCard({ product }: { product: Product }) {
       hoverImage: currentHoverImage,
     };
     addItem(productWithColor, sizeToUse);
+    userActivityService.log({
+      action: "card_quick_add",
+      pageType: "product_card",
+      path: productUrl,
+      duration: 0,
+      metadata: {
+        productTitle: product.title,
+        productHandle: product.handle,
+        productPrice: currentPrice,
+        productColor: currentColorway,
+        selectedSize: sizeToUse,
+      },
+    });
+  };
+
+  const handleCardMouseEnter = () => {
+    setIsHovered(true);
+    hoverStartTimeRef.current = Date.now();
+  };
+
+  const handleCardMouseLeave = () => {
+    setIsHovered(false);
+    if (hoverStartTimeRef.current) {
+      const ms = Date.now() - hoverStartTimeRef.current;
+      const seconds = Math.max(1, Math.round(ms / 1000));
+      // Track hover if user engaged for at least 1s
+      userActivityService.log({
+        action: "card_hover",
+        pageType: "product_card",
+        path: productUrl,
+        duration: seconds,
+        metadata: {
+          productTitle: product.title,
+          productHandle: product.handle,
+          productPrice: currentPrice,
+          productColor: currentColorway,
+          productImage: currentMainImage,
+          hoverSeconds: seconds,
+        },
+      });
+      hoverStartTimeRef.current = null;
+    }
+  };
+
+  const handleCardClick = () => {
+    userActivityService.log({
+      action: "card_click",
+      pageType: "product_card",
+      path: productUrl,
+      duration: 0,
+      metadata: {
+        productTitle: product.title,
+        productHandle: product.handle,
+        productPrice: currentPrice,
+        productColor: currentColorway,
+      },
+    });
   };
 
   return (
     <div
       className="ns-product product-card product-card--style2"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      data-testid={`product-card-${product.handle}`}
+      onMouseEnter={handleCardMouseEnter}
+      onMouseLeave={handleCardMouseLeave}
       style={{
         position: "relative",
         display: "flex",
@@ -106,6 +179,7 @@ export function ProductCard({ product }: { product: Product }) {
         <Link
           className="js-card-product-link"
           href={productUrl}
+          onClick={handleCardClick}
           style={{ display: "block", position: "relative", aspectRatio: "3/4" }}
         >
           {/* Main image - dynamically updates based on selected color swatch */}
@@ -114,6 +188,7 @@ export function ProductCard({ product }: { product: Product }) {
             src={currentMainImage}
             alt={`${product.title} - ${currentColorway}`}
             fill
+            unoptimized
             sizes="(min-width: 1200px) 25vw, (min-width: 768px) 33vw, 50vw"
             style={{
               objectFit: "cover",
@@ -131,6 +206,7 @@ export function ProductCard({ product }: { product: Product }) {
               src={currentHoverImage}
               alt={`${product.title} ${currentColorway} alternate`}
               fill
+              unoptimized
               sizes="(min-width: 1200px) 25vw, (min-width: 768px) 33vw, 50vw"
               style={{
                 objectFit: "cover",
@@ -288,7 +364,7 @@ export function ProductCard({ product }: { product: Product }) {
                   alignItems: "center",
                 }}
               >
-                {product.swatches.map((swatch) => {
+                {product.swatches.map((swatch, sIdx) => {
                   const isActive =
                     (activeSwatch && activeSwatch.name === swatch.name) ||
                     (!activeSwatch &&
@@ -296,7 +372,7 @@ export function ProductCard({ product }: { product: Product }) {
 
                   return (
                     <button
-                      key={swatch.name}
+                      key={swatch.id || `${swatch.name || "swatch"}-${swatch.color || ""}-${sIdx}`}
                       type="button"
                       className={`product__swatch-link ${isActive ? "product__swatch-link--current active" : ""}`}
                       onClick={(e) => handleSwatchClick(swatch, e)}
@@ -353,11 +429,11 @@ export function ProductCard({ product }: { product: Product }) {
                 margin: 0,
               }}
             >
-              {currentSizes.map((sz) => {
+              {currentSizes.map((sz, szIdx) => {
                 const isSelected = selectedSize === sz;
                 return (
                   <button
-                    key={sz}
+                    key={`${sz}-${szIdx}`}
                     type="button"
                     className={`nosto-size ${isSelected ? "selected" : ""}`}
                     onClick={(e) => handleSizeClick(sz, e)}

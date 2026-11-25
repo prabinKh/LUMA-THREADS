@@ -126,8 +126,8 @@ export function ProductCarousel({
 
       <div className="carousel-wrapper" style={{ width: "100%", maxWidth: "100%", padding: 0 }}>
         <div ref={trackRef} className="carousel-track">
-          {products.map((product) => (
-            <div key={product.handle} className="carousel-slide">
+          {products.map((product, pIdx) => (
+            <div key={`${product.handle || "prod"}-${pIdx}`} className="carousel-slide">
               <ProductCard product={product} />
             </div>
           ))}

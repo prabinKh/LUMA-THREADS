@@ -1,0 +1,86 @@
+[
+  {
+    "id": 1280933,
+    "name": "no po",
+    "slug": "no-po",
+    "description": "no po brand",
+    "logo": "",
+    "categories": [
+      {
+        "slug": "sweaters",
+        "id": "sweaters",
+        "name": "Sweaters"
+      }
+    ],
+    "category_ids": [
+      "sweaters"
+    ],
+    "is_active": true
+  },
+  {
+    "id": 1,
+    "name": "Luma Threads",
+    "slug": "luma-threads",
+    "description": "Premium sustainable essentials & utilitarian craftsmanship",
+    "logo": "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=100&h=100&fit=crop",
+    "categories": [
+      {
+        "slug": "tops",
+        "name": "Tops"
+      },
+      {
+        "slug": "denim",
+        "name": "Denim"
+      }
+    ],
+    "category_ids": [
+      "tops",
+      "denim"
+    ],
+    "is_active": true
+  },
+  {
+    "id": 2,
+    "name": "Pistola Denim",
+    "slug": "pistola-denim",
+    "description": "California-crafted premium denim and modern silhouettes",
+    "logo": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=100&h=100&fit=crop",
+    "categories": [
+      {
+        "slug": "denim",
+        "name": "Denim"
+      },
+      {
+        "slug": "bottoms",
+        "name": "Bottoms"
+      }
+    ],
+    "category_ids": [
+      "denim",
+      "bottoms"
+    ],
+    "is_active": true
+  },
+  {
+    "id": 3,
+    "name": "Atelier Studio",
+    "slug": "atelier-studio",
+    "description": "Tailored outerwear, cashmere knitwear, and timeless classics",
+    "logo": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=100&h=100&fit=crop",
+    "categories": [
+      {
+        "slug": "outerwear",
+        "name": "Outerwear"
+      },
+      {
+        "slug": "knitwear",
+        "name": "Knitwear"
+      }
+    ],
+    "category_ids": [
+      "outerwear",
+      "knitwear"
+    ],
+    "is_active": true
+  }
+]

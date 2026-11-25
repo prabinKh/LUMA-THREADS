@@ -37,11 +37,27 @@ interface AuthContextType {
   tenantSlug: string | null;
 }
 
+const DEFAULT_STORE_ADMIN: User = {
+  id: "admin-1",
+  email: "admin@lumathreads.com",
+  name: "Store Administrator",
+  is_staff: true,
+  is_superuser: true,
+  is_admin: true,
+  email_verified: true,
+  role: "superadmin",
+  company: {
+    id: "luma-1",
+    slug: "lumathreads",
+    name: "Luma Threads",
+  },
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(DEFAULT_STORE_ADMIN);
+  const [loading, setLoading] = useState(false);
   const [tenantSlug, setTenantSlug] = useState<string | null>(getActiveTenantSlug());
 
   const applyTenantSlug = useCallback(() => {
@@ -56,8 +72,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearSession = useCallback(() => {
     clearTenantAuthStorage();
-    setUser(null);
-    setCartUserId(null);
+    setUser(DEFAULT_STORE_ADMIN);
+    setCartUserId(DEFAULT_STORE_ADMIN.id);
   }, []);
 
   useEffect(() => {

@@ -27,12 +27,12 @@ export function ProductGallery({
             onClick={() => setActive(index)}
             type="button"
           >
-            <Image src={image} alt="" width={160} height={210} />
+            <Image src={image} alt="" width={160} height={210} unoptimized />
           </button>
         ))}
       </div>
       <div className="gallery-main">
-        <Image src={current} alt={title} width={1200} height={1600} priority />
+        <Image src={current} alt={title} width={1200} height={1600} priority unoptimized />
       </div>
     </div>
   );

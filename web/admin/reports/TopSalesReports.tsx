@@ -57,19 +57,29 @@ const TopSalesReports = () => {
     return () => clearInterval(interval);
   }, [navigate]);
 
+  const isMatch = (item: any, p: Product) => {
+    if (!item) return false;
+    if (item.productId && (String(item.productId) === String(p.id) || String(item.productId) === String(p.handle))) return true;
+    if (item.product_handle && (item.product_handle === p.handle || item.product_handle === p.slug)) return true;
+    if (item.productHandle && (item.productHandle === p.handle || item.productHandle === p.slug)) return true;
+    const itemName = (item.name || item.product_name || "").toLowerCase().trim();
+    const pName = (p.name || p.title || "").toLowerCase().trim();
+    return itemName && pName && itemName === pName;
+  };
+
   const productSales = products.map(p => {
-    const conformOrders = orders.filter(o => o.status === "process_conform");
+    const validOrders = orders.filter(o => o.status !== "cancelled" && o.status !== "process_dont_conform");
     
-    const salesCount = conformOrders.reduce((acc, o) => {
-      const item = o.items?.find(i => i.productId === p.id);
-      return acc + (item ? item.quantity : 0);
+    const salesCount = validOrders.reduce((acc, o) => {
+      const matchingItems = o.items?.filter(i => isMatch(i, p)) || [];
+      return acc + matchingItems.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
     }, 0);
-    const revenue = conformOrders.reduce((acc, o) => {
-      const item = o.items?.find(i => i.productId === p.id);
-      return acc + (item ? item.price * item.quantity : 0);
+    const revenue = validOrders.reduce((acc, o) => {
+      const matchingItems = o.items?.filter(i => isMatch(i, p)) || [];
+      return acc + matchingItems.reduce((sum, item) => sum + ((Number(item.price) || p.price || 0) * (Number(item.quantity) || 1)), 0);
     }, 0);
     return {
-      name: p.name,
+      name: p.name || p.title || "Product",
       sales: salesCount,
       revenue,
       image: p.image
@@ -90,7 +100,7 @@ const TopSalesReports = () => {
   return (
     <div className="flex-1 min-h-screen overflow-y-auto no-scrollbar pb-20 lg:pb-0" ref={containerRef}>
 
-        <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-8">
+        <div className="p-4 lg:p-8 w-full space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 gsap-reveal">
             <div className="lg:col-span-2 bg-card border border-border rounded-3xl p-6 shadow-sm">
               <div className="flex items-center justify-between mb-8">

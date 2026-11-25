@@ -31,7 +31,7 @@ const CategoryFeatures = () => {
   const [selectedCategorySlug, setSelectedCategorySlug] = useState<string | null>(null);
   
   // Derived selected category
-  const selectedCategory = categories.find(c => c.slug === selectedCategorySlug) || null;
+  const selectedCategory = categories.find(c => (c.slug === selectedCategorySlug || c.handle === selectedCategorySlug)) || null;
   
   // Form States
   const [isAddingCategory, setIsAddingCategory] = useState(false);
@@ -432,8 +432,8 @@ const CategoryFeatures = () => {
   };
 
   const filteredCategories = categories.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    c.slug.toLowerCase().includes(searchTerm.toLowerCase())
+    (c.name || c.title || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (c.slug || c.handle || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -448,8 +448,8 @@ const CategoryFeatures = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 min-h-screen pb-20 lg:pb-0 bg-muted/50" ref={containerRef}>
-      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+    <div className="flex-1 flex flex-col min-w-0 min-h-screen w-full pb-20 lg:pb-0 bg-muted/50" ref={containerRef}>
+      <div className="p-4 sm:p-6 lg:p-8 xl:p-10 w-full">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 gsap-reveal">
           <div>
             <h2 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">Category Architecture</h2>

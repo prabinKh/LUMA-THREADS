@@ -38,10 +38,9 @@ export const chatService = {
   getSessions: async (): Promise<ChatSession[]> => {
     try {
       const response = await axiosInstance.get("/chat/chat-sessions/");
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching chat sessions:", error);
-      throw error;
+      return Array.isArray(response.data) ? response.data : [];
+    } catch {
+      return [];
     }
   },
 

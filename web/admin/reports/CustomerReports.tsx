@@ -60,8 +60,8 @@ const CustomerReports = () => {
 
   useEffect(() => {
     const filtered = customers.filter(c => 
-      c.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.email.toLowerCase().includes(searchQuery.toLowerCase())
+      (c.displayName || c.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.email || "").toLowerCase().includes(searchQuery.toLowerCase())
     );
     setFilteredCustomers(filtered);
   }, [searchQuery, customers]);
@@ -97,7 +97,7 @@ const CustomerReports = () => {
   return (
     <div className="flex-1 min-h-screen overflow-y-auto no-scrollbar pb-20 lg:pb-0" ref={containerRef}>
 
-        <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-8">
+        <div className="p-4 lg:p-8 w-full space-y-8">
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 gsap-reveal">
             {[
@@ -156,11 +156,11 @@ const CustomerReports = () => {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold">
-                              {customer.displayName?.charAt(0) || "U"}
+                              {customer.displayName?.charAt(0) || customer.name?.charAt(0) || "U"}
                             </div>
                             <div>
-                              <p className="text-sm font-bold truncate max-w-[150px]">{customer.displayName || "Unknown User"}</p>
-                              <p className="text-[10px] text-muted-foreground font-mono">UID: {customer.uid?.slice(0, 8)}...</p>
+                              <p className="text-sm font-bold truncate max-w-[150px]">{customer.displayName || customer.name || "Customer"}</p>
+                              <p className="text-[10px] text-muted-foreground font-mono">UID: {String(customer.uid || customer.id || "").slice(0, 8)}...</p>
                             </div>
                           </div>
                         </td>

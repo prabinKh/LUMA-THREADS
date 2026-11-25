@@ -50,27 +50,29 @@ const StockReport = () => {
     return () => clearInterval(interval);
   }, [navigate]);
 
+  const getStock = (p: any) => typeof p.stock === 'number' ? p.stock : (typeof p.stockCount === 'number' ? p.stockCount : 0);
+
   useEffect(() => {
     let filtered = products.filter(p => 
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.id && p.id.toLowerCase().includes(searchQuery.toLowerCase()))
+      (p.name || p.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.id ? String(p.id).toLowerCase().includes(searchQuery.toLowerCase()) : false)
     );
 
     if (stockStatus === "in-stock") {
-      filtered = filtered.filter(p => (p.stock || 0) > 10);
+      filtered = filtered.filter(p => getStock(p) > 10);
     } else if (stockStatus === "low-stock") {
-      filtered = filtered.filter(p => (p.stock || 0) > 0 && (p.stock || 0) <= 10);
+      filtered = filtered.filter(p => getStock(p) > 0 && getStock(p) <= 10);
     } else if (stockStatus === "out-of-stock") {
-      filtered = filtered.filter(p => (p.stock || 0) === 0);
+      filtered = filtered.filter(p => getStock(p) === 0);
     }
 
     setFilteredProducts(filtered);
   }, [searchQuery, stockStatus, products]);
 
   const totalProducts = products.length;
-  const inStock = products.filter(p => (p.stock || 0) > 10).length;
-  const lowStock = products.filter(p => (p.stock || 0) > 0 && (p.stock || 0) <= 10).length;
-  const outOfStock = products.filter(p => (p.stock || 0) === 0).length;
+  const inStock = products.filter(p => getStock(p) > 10).length;
+  const lowStock = products.filter(p => getStock(p) > 0 && getStock(p) <= 10).length;
+  const outOfStock = products.filter(p => getStock(p) === 0).length;
 
   if (loading) {
     return (
@@ -86,7 +88,7 @@ const StockReport = () => {
   return (
     <div className="flex-1 min-h-screen overflow-y-auto no-scrollbar pb-20 lg:pb-0" ref={containerRef}>
 
-        <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-8">
+        <div className="p-4 lg:p-8 w-full space-y-8">
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 gsap-reveal">
             {[
@@ -158,16 +160,16 @@ const StockReport = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden border border-border group-hover:scale-105 transition-transform">
-                            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                            <img src={product.image} alt={product.name || product.title || "Product"} className="w-full h-full object-cover" />
                           </div>
-                          <p className="text-sm font-bold truncate max-w-[200px]">{product.name}</p>
+                          <p className="text-sm font-bold truncate max-w-[200px]">{product.name || product.title || "Product"}</p>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-xs font-mono font-bold text-primary">#{String(product.id || "").slice(-6).toUpperCase()}</span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-xs font-medium">{product.category}</span>
+                        <span className="text-xs font-medium">{product.category_name || product.category || "Apparel"}</span>
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm font-bold">{formatPrice(product.price)}</span>

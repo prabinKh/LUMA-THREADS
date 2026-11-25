@@ -12,8 +12,8 @@ export function ProductGrid({ products }: { products: Product[] }) {
 
   return (
     <div className="product-grid-4-col">
-      {products.map((product) => (
-        <ProductCard key={product.handle} product={product} />
+      {products.map((product, pIdx) => (
+        <ProductCard key={`${product.handle || "prod"}-${pIdx}`} product={product} />
       ))}
     </div>
   );

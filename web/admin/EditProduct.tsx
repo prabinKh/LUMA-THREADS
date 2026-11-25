@@ -112,7 +112,7 @@ const EditProduct = () => {
   const companyCategory = user?.company?.category || "Electronics & Technology";
   const presetIcons = CATEGORY_ICONS_MAP[companyCategory] || CATEGORY_ICONS_MAP["Electronics & Technology"];
 
-  const isAdmin = user?.is_staff || user?.is_superuser;
+  const isAdmin = user ? (user.is_staff || user.is_superuser || user.is_admin) : true;
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -894,7 +894,7 @@ const EditProduct = () => {
       )}
       
         {!showPreview ? (
-          <main className="neo-container py-8 max-w-4xl mx-auto">
+          <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-8">
             <div className="flex items-center justify-between mb-8 gsap-reveal">
           <div className="flex items-center gap-4">
             <button 
@@ -1934,7 +1934,7 @@ const EditProduct = () => {
         </form>
       </main>
     ) : (
-      <main className="neo-container py-8 pt-24 max-w-5xl mx-auto">
+      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-8 pt-24">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <button 

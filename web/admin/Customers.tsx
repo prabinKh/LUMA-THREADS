@@ -90,16 +90,16 @@ const AdminCustomers = () => {
   }, [selectedCustomer]);
 
   const filteredCustomers = customers.filter(customer => 
-    customer.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.uid.toLowerCase().includes(searchTerm.toLowerCase())
+    (customer.displayName || customer.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (customer.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    String(customer.uid || customer.id || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 min-h-screen pb-20 lg:pb-0">
-        <main className="flex-1 p-4 md:p-8">
-          <div className="max-w-7xl mx-auto space-y-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="flex-1 flex flex-col min-w-0 min-h-screen w-full pb-20 lg:pb-0">
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 w-full">
+        <div className="w-full space-y-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
                 <h1 className="text-3xl font-bold text-foreground">Customer Analytics</h1>
                 <p className="text-muted-foreground">Track customer behavior and cart activity</p>

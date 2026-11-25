@@ -95,7 +95,7 @@ const CountryOrderReport = () => {
 
   return (
     <div className="flex-1 min-h-screen overflow-y-auto no-scrollbar pb-20 lg:pb-0" ref={containerRef}>
-        <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-8">
+        <div className="p-4 lg:p-8 w-full space-y-8">
           <div className="flex items-center justify-between gsap-reveal">
             <div>
               <h1 className="text-2xl font-display font-bold">Location Order Report</h1>

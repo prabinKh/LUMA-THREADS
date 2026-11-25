@@ -2055,7 +2055,24 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-.hidden { display: none !important; }
+.hidden { display: none; }
+.admin-sidebar-desktop {
+  display: flex !important;
+  flex-direction: column;
+}
+@media (max-width: 767px) {
+  .admin-sidebar-desktop {
+    display: none !important;
+  }
+}
+.admin-mobile-toggle {
+  display: none !important;
+}
+@media (max-width: 767px) {
+  .admin-mobile-toggle {
+    display: flex !important;
+  }
+}
 .relative { position: relative; }
 .overflow-hidden { overflow: hidden; }
 .w-full { width: 100%; }

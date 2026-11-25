@@ -61,8 +61,8 @@ export const orderService = {
 
   async create(orderData: Partial<Order>) {
     try {
-      const response = await axiosInstance.post("/store/orders/create/", orderData);
-      return response.data;
+      const response = await axiosInstance.post("/orders/", orderData);
+      return normalizeOrder(response.data);
     } catch (error) {
       console.error("Error creating order:", error);
       throw error;
